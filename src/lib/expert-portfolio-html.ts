@@ -95,7 +95,7 @@ function lbl(group,value){return (lblMap[group]&&lblMap[group][value])||value;}
 function progName(value){const found=[...unique,...extras].find(program=>program.key===value);return found?found.name:value;}
 function opts(group){return (catalog.OPTIONS[group]||[]).map(item=>({value:item.code,label:item.ar}));}
 function fillCities(select,countryValue){[...select.options].forEach(option=>{if(option.value!==''&&option.value!=='__other__')option.remove();});const other=[...select.options].find(option=>option.value==='__other__');(catalog.CITIES[countryValue]||[]).forEach(city=>select.insertBefore(node('option',city.ar,{value:city.code}),other||null));}
-Object.assign(translations,{"تُحفظ بياناتك تلقائيًا في حسابك على Nexiz كمسودة. لا يُنشر ملفك علنًا قبل مراجعته.": "Your data is saved automatically to your Nexiz account as a draft. Your profile is not published publicly before it is reviewed.", "تُحفظ بياناتك تلقائيًا في حسابك أثناء الكتابة، ويمكنك العودة لاستكمالها في أي وقت.": "Your data is saved automatically to your account as you type. You can come back and finish at any time.", "زر «مراجعة ملفي» يحفظ ملفك في حسابك ويعرض ملخصًا. لا يُنشر ملفك علنًا قبل مراجعة Nexiz، ولا يُولَّد تقرير بالذكاء الاصطناعي.": "The “Review my portfolio” button saves your profile to your account and shows a summary. Your profile is not published publicly before Nexiz reviews it, and no AI report is generated.", "JPG أو PNG أو WebP، حتى ٥ ميجابايت.": "JPG, PNG or WebP, up to 5 MB.", "حُفظت المسودة في حسابك.": "Draft saved to your account.", "حُفظ ملفك في حسابك.": "Your profile was saved to your account.", "تعذّر الحفظ. حاول مرة أخرى.": "Could not save. Please try again.", "تعذّر الحفظ؛ تحقّق من الاتصال وأبقِ الصفحة مفتوحة.": "Could not save; check your connection and keep this page open.", "جارٍ الحفظ…": "Saving…", "استُعيد ملفك المحفوظ من حسابك.": "Your saved profile was loaded from your account.", "تم حفظ ملفك في حسابك. لم يُنشأ رابط عام بعد.": "Your profile was saved to your account. No public link has been created yet.", "أُضيفت صورتك وستُحفظ في حسابك.": "Your photo was added and will be saved to your account."});
+Object.assign(translations,{"تُحفظ بياناتك تلقائيًا في حسابك على Nexiz كمسودة. لا يُنشر ملفك علنًا قبل مراجعته.": "Your data is saved automatically to your Nexiz account as a draft. Your profile is not published publicly before it is reviewed.", "تُحفظ بياناتك تلقائيًا في حسابك أثناء الكتابة، ويمكنك العودة لاستكمالها في أي وقت.": "Your data is saved automatically to your account as you type. You can come back and finish at any time.", "زر «مراجعة ملفي» يحفظ ملفك في حسابك ويعرض ملخصًا. لا يُنشر ملفك علنًا قبل مراجعة Nexiz، ولا يُولَّد تقرير بالذكاء الاصطناعي.": "The “Review my portfolio” button saves your profile to your account and shows a summary. Your profile is not published publicly before Nexiz reviews it, and no AI report is generated.", "JPG أو PNG أو WebP، حتى ٥ ميجابايت.": "JPG, PNG or WebP, up to 5 MB.", "حُفظت المسودة في حسابك.": "Draft saved to your account.", "حُفظ ملفك في حسابك.": "Your profile was saved to your account.", "تعذّر الحفظ. حاول مرة أخرى.": "Could not save. Please try again.", "تعذّر الحفظ؛ تحقّق من الاتصال وأبقِ الصفحة مفتوحة.": "Could not save; check your connection and keep this page open.", "جارٍ الحفظ…": "Saving…", "تم رفض إذن الميكروفون. اسمح بالميكروفون من أيقونة القفل بجانب عنوان الصفحة.": "Microphone permission was denied. Allow the microphone from the lock icon next to the page address.", "لم يتم العثور على ميكروفون. تحقّق من توصيله وإعدادات الصوت.": "No microphone was found. Check that it is connected and your sound settings.", "اللغة العربية غير مدعومة في هذا المتصفح.": "Arabic is not supported in this browser.", "تعذّر الاتصال بخدمة التعرف على الصوت. تحقّق من الإنترنت ثم حاول مجددًا.": "Could not reach the speech recognition service. Check your internet and try again.", "لم يلتقط الميكروفون أي كلام. تحقّق من مستوى صوت الميكروفون ثم حاول مجددًا.": "The microphone did not pick up any speech. Check the microphone volume and try again.", "جارٍ الاستماع بالعربية (ar-SA)… راجع النص بعد الإملاء.": "Listening in Arabic (ar-SA)… review your text afterwards.", "التقط الميكروفون كلامًا بالإنجليزية فتم تجاهله. تحدّث بالعربية.": "The microphone picked up English speech and it was ignored. Please speak Arabic.", "استُعيد ملفك المحفوظ من حسابك.": "Your saved profile was loaded from your account.", "تم حفظ ملفك في حسابك. لم يُنشأ رابط عام بعد.": "Your profile was saved to your account. No public link has been created yet.", "أُضيفت صورتك وستُحفظ في حسابك.": "Your photo was added and will be saved to your account."});
 function translate(text){
   if(language==='ar')return text;
   const trim=text.trim(),suffix=trim.endsWith(' *')?' *':'',base=suffix?trim.slice(0,-2):trim;
@@ -173,18 +173,71 @@ function paintVoice(button,listening,supported=true){
   button.append(svg);
 }
 function addVoice(input,wrap){
-  const supported=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const button=node('button',null,{type:'button',class:'voice'});button.disabled=!supported;paintVoice(button,false,Boolean(supported));
+  const Supported=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const button=node('button',null,{type:'button',class:'voice'});button.disabled=!Supported;paintVoice(button,false,Boolean(Supported));
   const status=node('small','',{class:'status',role:'status'});wrap.append(button,status);
+  const NL=String.fromCharCode(10);
+  const join=(a,b)=>!a?b:!b?a:a+(a.endsWith(NL)||a.endsWith(' ')?'':' ')+b;
+  function say(text){status.textContent=text;queueMicrotask(applyLanguage);}
+  const inRange=(text,ranges)=>[...text].some(ch=>{const c=ch.charCodeAt(0);return ranges.some(([a,b])=>c>=a&&c<=b);});
+  const hasArabic=text=>inRange(text,[[0x600,0x6FF],[0x750,0x77F],[0xFB50,0xFDFF],[0xFE70,0xFEFF]]);
+  const hasLatin=text=>inRange(text,[[65,90],[97,122]]);
+  // In Arabic mode the browser sometimes writes what it heard in English letters. Ignore a result that has no Arabic at all.
+  const wrongScript=text=>language==='ar'&&hasLatin(text)&&!hasArabic(text);
+  const fatalMessage=code=>code==='not-allowed'||code==='service-not-allowed'?'تم رفض إذن الميكروفون. اسمح بالميكروفون من أيقونة القفل بجانب عنوان الصفحة.':code==='audio-capture'?'لم يتم العثور على ميكروفون. تحقّق من توصيله وإعدادات الصوت.':code==='language-not-supported'?'اللغة العربية غير مدعومة في هذا المتصفح.':'تعذّر الإملاء. تحقّق من إذن الميكروفون أو اكتب إجابتك.';
+  function finish(session,message){
+    if(activeSpeech===session)activeSpeech=null;
+    paintVoice(button,false);
+    if(message)say(message);
+    else if(status.textContent.startsWith('جارٍ')||status.textContent.startsWith('Listening…'))say('انتهى الاستماع. يمكنك الكتابة أو المحاولة مجددًا.');
+  }
+  function listen(session){
+    const recognition=new Supported();
+    recognition.lang=language==='ar'?'ar-SA':'en-US';
+    recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=1;
+    session.recognition=recognition;
+    recognition.onresult=event=>{
+      if(activeSpeech!==session)return;
+      let finals='',interim='',skipped=false;
+      for(let i=event.resultIndex;i<event.results.length;i++){const piece=event.results[i][0].transcript;if(wrongScript(piece)){skipped=true;continue;}if(event.results[i].isFinal)finals+=piece+' ';else interim+=piece;}
+      session.retries=0;session.heard=true;
+      if(skipped&&!finals.trim()&&!interim.trim()){say('التقط الميكروفون كلامًا بالإنجليزية فتم تجاهله. تحدّث بالعربية.');return;}
+      if(input.value!==session.shown)session.base=input.value;
+      if(finals.trim())session.base=join(session.base,finals.trim());
+      input.value=join(session.base,interim.trim()).slice(0,input.maxLength||2000);
+      session.shown=input.value;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      if(!interim)say(skipped?'التقط الميكروفون كلامًا بالإنجليزية فتم تجاهله. تحدّث بالعربية.':'أُضيف النص. راجعه وعدّله قبل استخدامه.');
+    };
+    recognition.onerror=event=>{
+      const code=event&&event.error;
+      if(code==='no-speech'||code==='network'){session.lastError=code;return;}
+      session.fatal=code||'error';
+    };
+    recognition.onend=()=>{
+      if(activeSpeech!==session){paintVoice(button,false);return;}
+      if(session.stopping){finish(session);return;}
+      if(session.fatal){finish(session,session.fatal==='aborted'?'':fatalMessage(session.fatal));return;}
+      session.base=input.value;
+      session.retries+=1;
+      if(session.retries>6){finish(session,session.heard?'':session.lastError==='network'?'تعذّر الاتصال بخدمة التعرف على الصوت. تحقّق من الإنترنت ثم حاول مجددًا.':'لم يلتقط الميكروفون أي كلام. تحقّق من مستوى صوت الميكروفون ثم حاول مجددًا.');return;}
+      setTimeout(()=>{
+        if(activeSpeech!==session||session.stopping)return;
+        try{listen(session);}catch{finish(session,'تعذّر الإملاء. تحقّق من إذن الميكروفون أو اكتب إجابتك.');}
+      },250);
+    };
+    recognition.start();
+  }
   button.addEventListener('click',()=>{
-    if(activeSpeech){const previous=activeSpeech;activeSpeech=null;previous.recognition.abort();if(previous.input===input)return;}
-    const recognition=new supported();recognition.lang=language==='ar'?'ar-SA':'en-US';recognition.interimResults=false;recognition.continuous=false;
-    const session={recognition,input};activeSpeech=session;paintVoice(button,true);
-    status.textContent='جارٍ الاستماع… راجع النص بعد الإملاء.';
-    recognition.onresult=event=>{if(activeSpeech!==session)return;let text='';for(let i=event.resultIndex;i<event.results.length;i++)if(event.results[i].isFinal)text+=event.results[i][0].transcript+' ';input.value=(input.value+(input.value?'\\n':'')+text.trim()).slice(0,input.maxLength||2000);input.dispatchEvent(new Event('input',{bubbles:true}));status.textContent='أُضيف النص. راجعه وعدّله قبل استخدامه.';};
-    recognition.onerror=()=>{status.textContent='تعذّر الإملاء. تحقّق من إذن الميكروفون أو اكتب إجابتك.';queueMicrotask(applyLanguage);};
-    recognition.onend=()=>{if(activeSpeech===session)activeSpeech=null;paintVoice(button,false);if((status.textContent.startsWith('جارٍ')||status.textContent.startsWith('Listening…')))status.textContent='انتهى الاستماع. يمكنك الكتابة أو المحاولة مجددًا.';queueMicrotask(applyLanguage);};
-    try{recognition.start();}catch{activeSpeech=null;paintVoice(button,false);status.textContent='تعذّر تشغيل الإملاء هنا؛ يمكنك الكتابة.';}
+    if(activeSpeech){
+      const previous=activeSpeech;
+      if(previous.input===input){previous.stopping=true;try{previous.recognition.stop();}catch{}say('انتهى الاستماع. يمكنك الكتابة أو المحاولة مجددًا.');return;}
+      activeSpeech=null;try{previous.recognition.abort();}catch{}
+    }
+    const session={input,recognition:null,base:input.value&&!input.value.endsWith(NL)?input.value+NL:input.value,shown:input.value,stopping:false,retries:0,fatal:''};
+    activeSpeech=session;paintVoice(button,true);
+    say(language==='ar'?'جارٍ الاستماع بالعربية (ar-SA)… راجع النص بعد الإملاء.':'جارٍ الاستماع… راجع النص بعد الإملاء.');
+    try{listen(session);}catch{activeSpeech=null;paintVoice(button,false);say('تعذّر تشغيل الإملاء هنا؛ يمكنك الكتابة.');}
   });
 }
 function multiChoice(parent,label,list,values){
