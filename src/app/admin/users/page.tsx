@@ -5,13 +5,13 @@ import { deleteUser, saveUser } from '@/app/actions/admin';
 import { requirePermission } from '@/lib/auth/current-user';
 import { db } from '@/lib/supabase/admin';
 
-type Row = { id: string; email: string; full_name: string; role_id: string; is_active: boolean; last_login_at: string | null; role: { name: string } | { name: string }[] | null };
+type Row = { id: string; email: string; full_name: string; role_id: string; is_active: boolean; field_agent: boolean; last_login_at: string | null; role: { name: string } | { name: string }[] | null };
 
 export default async function UsersPage({ searchParams }: { searchParams: Promise<{ edit?: string; ok?: string; error?: string }> }) {
   const me = await requirePermission('users.manage');
   const sp = await searchParams;
   const [{ data: u }, { data: r }] = await Promise.all([
-    db().from('rv_users').select('id,email,full_name,role_id,is_active,last_login_at,role:rv_roles(name)').order('created_at'),
+    db().from('rv_users').select('id,email,full_name,role_id,is_active,field_agent,last_login_at,role:rv_roles(name)').order('created_at'),
     db().from('rv_roles').select('id,name').order('name'),
   ]);
   const users = (u ?? []) as Row[];
@@ -35,6 +35,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
         </label>
         <label>{editing ? 'New password (leave empty to keep)' : 'Password (min 8 characters)'}
           <input name="password" type="password" minLength={8} required={!editing} autoComplete="new-password" /></label>
+        <label className="check"><input type="checkbox" name="field_agent" defaultChecked={editing?.field_agent} /> Field agent (can collect reviews on behalf of respondents)</label>
         {editing && <label className="check"><input type="checkbox" name="is_active" defaultChecked={editing.is_active} /> Active (can log in)</label>}
         <div className="row"><button className="btn-primary">{editing ? 'Save user' : 'Create user'}</button>
           {editing && <Link href="/admin/users" className="btn-ghost">Cancel</Link>}</div>
@@ -46,7 +47,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
           {users.map((x) => (
             <tr key={x.id}>
               <td><b>{x.full_name}</b><div className="muted small">{x.email}</div></td>
-              <td><span className="badge">{roleName(x)}</span></td>
+              <td><span className="badge">{roleName(x)}</span>{x.field_agent && <span className="badge">field</span>}</td>
               <td>{x.is_active ? 'Active' : 'Disabled'}</td>
               <td className="small">{x.last_login_at ? new Date(x.last_login_at).toLocaleString('en-GB') : '—'}</td>
               <td className="actions">

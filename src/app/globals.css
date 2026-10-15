@@ -125,6 +125,23 @@ legend { font-size: 13px; font-weight: 700; padding: 0 6px; }
 
 .expert-frame { display: block; width: 100%; height: calc(100vh - 59px); height: calc(100dvh - 59px); border: 0; background: #f7f5ef; }
 
+/* change request: public review form */
+.sticky-head { position: sticky; top: 59px; z-index: 15; background: var(--white); padding: 8px 0; border-bottom: 1px solid var(--line); }
+.takes { margin-bottom: 4px; }
+.gap { margin-top: 10px; }
+.count.low { color: #b3261e; }
+.subratings { margin-top: 12px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
+.subratings summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.subrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; }
+.moved { display: block; margin-top: 10px; font-size: 13px; }
+.moved select { width: 100%; border: 1px solid #cfd8d3; border-radius: 10px; padding: 9px 12px; background: #fff; margin-top: 4px; }
+.anon { margin-top: 16px; font-size: 14px; }
+.field-box { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: var(--amber-soft); }
+.request { margin-top: 22px; } .request summary { cursor: pointer; color: var(--green-dark); font-weight: 600; }
+.request form { margin-top: 10px; } .request input { flex: 1; border: 1px solid #cfd8d3; border-radius: 10px; padding: 10px 12px; }
+.pill { min-height: 38px; }
+@media (max-width: 760px) { .sticky-head { top: 55px; } }
+
 @media (max-width: 760px) {
   .two-col, .grid2 { grid-template-columns: 1fr; }
   .admin { grid-template-columns: 1fr; } .admin-nav { flex-direction: row; flex-wrap: wrap; position: static; }

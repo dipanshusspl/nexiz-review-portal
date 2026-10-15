@@ -20,6 +20,7 @@ export const EXPERT_PORTFOLIO_HTML = `<!doctype html>
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:24px;align-items:start}main{max-width:1400px}.portfolio{position:sticky;top:20px;background:white;border:1px solid var(--line);border-radius:18px;padding:24px;overflow-wrap:anywhere}.portfolio h2{font-size:20px}.portfolio h3{font-size:15px;color:var(--green);margin:22px 0 8px}.portrait{width:84px;height:84px;border-radius:50%;background:var(--soft);object-fit:cover;display:grid;place-items:center;color:var(--green);font-size:32px;font-weight:bold;margin-bottom:12px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.chip{display:flex;gap:8px;align-items:center;background:var(--soft);border:1px solid #c7dfd2;border-radius:22px;padding:4px 12px;font-size:13px}.chip button{border:0;background:none;padding:0 4px;font-size:19px}.entry{border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0}.entry>button{margin-top:12px}.portfolio .entry{padding:12px}.portfolio p{font-size:14px}.portfolio ul{padding-inline-start:20px;font-size:14px}.mini-metrics{display:flex;gap:18px;border-block:1px solid var(--line);padding:14px 0;margin:18px 0}.mini-metrics strong{display:block;color:var(--green);font-size:22px}.mini-metrics span{font-size:12px}.voice{margin:8px 0;font-size:13px;padding:5px 10px}.avatar-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.avatar-actions label{flex:1}.portfolio .hint{font-size:12px}.other-input{margin-top:8px}.section h2{font-size:20px}.portfolio-header{display:flex;justify-content:space-between;gap:12px}.portfolio-label{font-size:12px;color:var(--muted)}
 @media(max-width:1100px){.layout{grid-template-columns:minmax(0,1fr) 300px}.section{padding:22px}}@media(max-width:850px){.layout{grid-template-columns:1fr}.portfolio{position:static;grid-row:1}.portfolio-body{max-height:360px;overflow:auto}.custom-grid{grid-template-columns:1fr}}
 .dropdown-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;background:white;color:var(--ink);border-color:#c7c3b9;text-align:start}.dropdown-menu{margin-top:8px;border:1px solid #c7c3b9;padding:12px;border-radius:12px;background:white;box-shadow:0 6px 18px #26241f12}.dropdown-menu select[size]{margin-top:10px;padding:4px;min-height:215px}.dropdown-menu select[size] option{padding:9px 12px;border-radius:6px}.dropdown-menu input,.dropdown-menu select{font-size:14px}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.voice{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:8px;vertical-align:middle;margin-inline-end:8px}.voice svg{width:22px;height:22px}.voice.recording{color:#a42828;background:#ffefef;border-color:#e7b7b7}.card{scroll-margin-top:18px}
+input[type=hidden]{display:none!important}.btns{display:flex;flex-wrap:wrap;gap:8px}.btns button.opt{padding:7px 14px;background:#fff;color:var(--ink);border-color:#c7c3b9;font-weight:normal;font-size:14px}.btns button.opt.on{background:var(--green);color:#fff;border-color:var(--green)}.ratings-stack{display:grid;gap:12px}.ratings-stack .field{background:var(--bg);border-radius:10px;padding:10px}.checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px}.checks .check{margin:4px 0}.sys-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sys-row select{width:auto;min-width:190px;padding:6px 10px}.matrix-row{padding:10px 0;border-top:1px solid var(--line)}.matrix-row:first-child{border-top:0}.helper{display:block;color:var(--muted);font-size:12px;font-weight:normal;margin-top:4px}@media(max-width:740px){.checks{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:450px){.checks{grid-template-columns:1fr}}
 /* embedded in the Nexiz app: the app top bar already shows the brand */
 header .brand{display:none}header>div{justify-content:flex-end}
 </style>
@@ -44,7 +45,7 @@ header .brand{display:none}header>div{justify-content:flex-end}
 </div>
 <label class="check"><input name="consent_expert" type="checkbox"><span>أرغب في أن تتواصل معي Nexiz لمناقشة فرص التعاون الاستشاري.</span></label>
 <div id="consultant-fields" class="optional" hidden><div id="services-field"></div></div>
-<label class="check"><input name="anonymous" type="checkbox"><span>أفضّل نشر مراجعاتي دون اسمي. المراجعات المجهولة لا تُنسب إلى ملفي العام.</span></label>
+
 </section>
 <section class="section"><h2>٢. شهاداتك ومشاريعك</h2><p class="hint">اختياري. أبرز ما يدعم خبرتك، ويمكنك إضافة المزيد لاحقًا.</p>
 <h3>الشهادات والمؤهلات</h3><div id="certificates"></div><button id="add-certificate" type="button">+ إضافة شهادة</button>
@@ -52,7 +53,7 @@ header .brand{display:none}header>div{justify-content:flex-end}
 <section class="section"><h2>٣. البرامج التي عملت عليها</h2><p class="hint">اختر البرنامج الذي استخدمته ليظهر تقييمه مباشرة. يمكنك إضافة أكثر من برنامج.</p>
 <div class="program-dropdown" id="program-dropdown"><button id="program-toggle" class="dropdown-trigger" type="button" aria-expanded="false" aria-controls="program-menu"><span>اختر البرنامج الذي استخدمته</span><span aria-hidden="true">⌄</span></button><div id="program-menu" class="dropdown-menu" hidden><div class="grid"><label class="field"><span class="sr-only">البحث داخل قائمة البرامج</span><input id="search" type="search" placeholder="اكتب اسم البرنامج…" autocomplete="off"></label><label class="field"><span class="sr-only">فئة البرامج</span><select id="category-filter" aria-label="فئة البرامج"><option value="">جميع الفئات</option></select></label></div><select id="software-select" size="7" aria-label="البرامج المتاحة"><option value="">اختر برنامجًا</option></select><p id="no-results" class="hint" hidden>لم نجد برنامجًا مطابقًا. اختر «برنامج غير موجود» لإضافته.</p></div></div><div id="picker" class="chips" aria-label="البرامج المختارة"></div>
 <div id="custom-program" class="custom" hidden><h3>إضافة برنامج غير موجود</h3><div class="custom-grid"><label class="field"><span>اسم البرنامج</span><input id="custom-name" maxlength="120"></label><div id="custom-category-host"></div><button id="add-custom" type="button">إضافة البرنامج</button></div><p id="custom-status" class="status" role="status"></p></div>
-<div class="progress"><strong id="progress-label">لم تختر برامج بعد</strong><progress id="completion" max="1" value="0" aria-label="اكتمال مراجعات البرامج"></progress></div>
+<div class="progress"><strong id="progress-label">لم تختر برامج بعد</strong><progress id="completion" max="1" value="0" aria-label="اكتمال مراجعات البرامج"></progress></div><p class="hint">تكفي مراجعة واحدة مكتملة للبدء. يمكنك إضافة الباقي في أي وقت.</p>
 </section>
 <section class="section"><h2>٤. أبرز خبرتك من خلال تجاربك</h2><p class="hint">ابدأ بمراجعة برنامج واحد، ثم أكمل الباقي لاحقًا. تظهر الإجابات التي تكتبها في المعاينة؛ ولا يعني اكتمالها اعتمادها للنشر.</p><div id="reviews"><p class="empty">اختر البرامج أعلاه لبدء تقييمها.</p></div></section>
 <section class="section"><label class="check"><input name="authenticity" type="checkbox"><span>أؤكد أن المراجعات مبنية على استخدامي الفعلي، وأنني أفصحت عن أي علاقة تجارية أو مهنية مع الشركات المطوّرة.</span></label><p class="hint">تُحفظ بياناتك تلقائيًا في حسابك أثناء الكتابة، ويمكنك العودة لاستكمالها في أي وقت.</p><div class="actions"><button type="submit" class="primary">مراجعة ملفي</button><span id="draft-status" class="status" role="status"></span></div><p id="form-status" class="status" role="status"></p><div id="summary-panel" class="review-panel" tabindex="-1" hidden></div><p class="foot">زر «مراجعة ملفي» يحفظ ملفك في حسابك ويعرض ملخصًا. لا يُنشر ملفك علنًا قبل مراجعة Nexiz، ولا يُولَّد تقرير بالذكاء الاصطناعي.</p></section>
@@ -86,6 +87,8 @@ const unique = [...new Map(entries.map(entry=>[entry.key,entry])).values()];
 translations['شبكة الخبراء الماليين | Nexiz']='Financial Experts Network | Nexiz';
 Object.assign(translations,{"اختر البرنامج الذي استخدمته": "Select software you have used", "البحث داخل قائمة البرامج": "Search within software list", "اكتب اسم البرنامج…": "Type a software name…", "البرامج المتاحة": "Available software", "تحدث للإجابة": "Answer by voice", "إيقاف الميكروفون": "Stop microphone", "الإجابة بالصوت غير متاحة في هذا المتصفح": "Voice input is unavailable in this browser", "الإجابة بالصوت اختيارية وتعتمد على المتصفح والاتصال؛ قد يعالج مزوّد المتصفح الصوت عبر خدمة خارجية. راجع النص قبل استخدامه.": "Voice input is optional and depends on your browser and connection. Your browser provider may process audio through an external service. Review the text before using it."});
 catalog.CATEGORIES.forEach(item=>translations[item.ar]=item.en);
+Object.values(catalog.STATIC||{}).flat().forEach(item=>{translations[item.ar]=item.en;});
+Object.assign(translations,{"تكفي مراجعة واحدة مكتملة للبدء. يمكنك إضافة الباقي في أي وقت.":"One completed review is enough to start. You can add the others at any time.","تُستخدم للتحقق فقط. لا تُعرض علنًا.":"Used for verification only. Not shown publicly.","نوع المنشأة":"Business type","كم استغرق تشغيل النظام فعليًا؟":"How long did go-live actually take?","هل استغرق أطول مما قيل لك؟":"Was it longer than you were told?","من نفّذ التطبيق؟":"Who did the implementation?","ماذا كنت تستخدم قبل ذلك؟":"What were you using before this?","لا شيء / جداول بيانات":"Nothing / spreadsheets","إلى ماذا انتقلت؟":"What did you move to?","وما السبب؟":"And why?","الامتثال السعودي":"Saudi compliance","كيف تعامل البرنامج مع الامتثال السعودي؟":"How did this software handle Saudi compliance?","هل من تفاصيل مهمة عن الامتثال؟":"Any important detail about compliance?","أي شيء آخر، أو تفاصيل عن طريقة استخدامها":"Anything else, or detail on how you used them","ما الأنظمة التي ربطتها به؟":"Which systems did you connect it to?","كم كلّف تقريبًا سنويًا؟":"Roughly what did it cost per year?","يكفي نطاق تقريبي. لا تُدخل تفاصيل العقد.":"A range is enough. Do not enter contract details.","من لا ينبغي أن يشتري هذا البرنامج؟":"Who should NOT buy this software?","نوع المنشأة وحجمها التي لا يناسبها البرنامج، ولماذا.":"Type and size of business this is a bad fit for, and why.","أفضّل نشر هذه المراجعة دون اسمي":"I prefer to publish this review anonymously","المراجعات المجهولة لا تُنسب إلى ملفك العام كخبير.":"Anonymous reviews are not credited to your public expert profile.","اختر الوظائف التي استخدمتها فعليًا":"Select the features you actually used","يمكنك اختيار أكثر من إجابة":"You can select more than one"});
 const softwareNames=Object.fromEntries(Object.values(catalog.SOFTWARE).flat().map(item=>[item.ar,item.en]));
 Object.entries(softwareNames).forEach(([ar,en])=>{if(!(ar in translations))translations[ar]=en;});
 const lblMap={};
@@ -160,6 +163,44 @@ function choice(parent,key,label,list,required=false,name=false) {
 }
 function fieldValue(input){return (input._custom && input.value==='__other__'?input._custom.value:input.value).trim();}
 function restoreField(input,value){value=String(value??'');if(input._custom && ![...input.options].some(option=>option.value===value)){input.value='__other__';input._custom.value=value;}else input.value=value;input._toggle?.();input._sync?.();}
+function btnGroup(parent,key,label,list,required){
+  const wrap=node('div',null,{class:'field'});wrap.append(node('span',label+(required?' *':'')));
+  const input=node('input',null,{type:'hidden','data-field':key});const row=node('div',null,{class:'btns',role:'group','aria-label':label});
+  list.forEach(item=>{const b=node('button',item.label,{type:'button',class:'opt','data-v':item.value});b.addEventListener('click',()=>{input.value=input.value===item.value?'':item.value;input._sync();input.dispatchEvent(new Event('change',{bubbles:true}));});row.append(b);});
+  input._sync=()=>row.querySelectorAll('button').forEach(b=>{const on=b.dataset.v===input.value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
+  wrap.append(row,input);parent.append(wrap);return input;
+}
+function checkList(parent,key,label,list,required,wide){
+  const wrap=node('div',null,{class:wide?'field wide':'field'});wrap.append(node('span',label+(required?' *':'')));
+  const input=node('input',null,{type:'hidden','data-field':key});const grid=node('div',null,{class:'checks'});const boxes=[];
+  const write=()=>{input.value=boxes.filter(x=>x.cb.checked).map(x=>x.code).join(',');};
+  list.forEach(item=>{const lab=node('label',null,{class:'check'});const cb=node('input',null,{type:'checkbox'});lab.append(cb,node('span',item.label));cb.addEventListener('change',()=>{write();input.dispatchEvent(new Event('change',{bubbles:true}));});boxes.push({code:item.value,cb});grid.append(lab);});
+  input._sync=()=>{const set=new Set(input.value.split(',').filter(Boolean));boxes.forEach(x=>{x.cb.checked=set.has(x.code);});};
+  wrap.append(grid,input);parent.append(wrap);return input;
+}
+function systemsField(parent,key,label){
+  const wrap=node('div',null,{class:'field wide'});wrap.append(node('span',label));
+  const input=node('input',null,{type:'hidden','data-field':key});const rows=[];
+  const write=()=>{input.value=rows.filter(r=>r.cb.checked).map(r=>r.code+':'+r.st.value).join(';');};
+  catalog.STATIC.systems.forEach(sys=>{
+    const row=node('div',null,{class:'sys-row'});const lab=node('label',null,{class:'check'});const cb=node('input',null,{type:'checkbox'});lab.append(cb,node('span',sys.ar));
+    const st=node('select',null,{'aria-label':sys.ar});catalog.STATIC.system_status.forEach(x=>st.append(node('option',x.ar,{value:x.code})));st.hidden=true;
+    const fire=()=>{st.hidden=!cb.checked;write();input.dispatchEvent(new Event('change',{bubbles:true}));};
+    cb.addEventListener('change',fire);st.addEventListener('change',fire);row.append(lab,st);wrap.append(row);rows.push({code:sys.code,cb,st});
+  });
+  input._sync=()=>{const map=new Map(input.value.split(';').filter(Boolean).map(x=>x.split(':')));rows.forEach(r=>{r.cb.checked=map.has(r.code);if(r.cb.checked)r.st.value=map.get(r.code);r.st.hidden=!r.cb.checked;});};
+  wrap.append(input);parent.append(wrap);return input;
+}
+function anonField(parent,label,helper){
+  const wrap=node('div',null,{class:'field wide'});const lab=node('label',null,{class:'check'});const cb=node('input',null,{type:'checkbox'});lab.append(cb,node('span',label));
+  const input=node('input',null,{type:'hidden','data-field':'anonymous'});
+  cb.addEventListener('change',()=>{input.value=cb.checked?'1':'';input.dispatchEvent(new Event('change',{bubbles:true}));});
+  input._sync=()=>{cb.checked=input.value==='1';};
+  wrap.append(lab,node('small',helper,{class:'helper'}),input);parent.append(wrap);return input;
+}
+function isNoCode(code){const o=(catalog.OPTIONS.still_using||[]).find(x=>x.code===code);return Boolean(o)&&(o.ar==='لا'||/^no$/i.test(o.en));}
+const FIVE=['1','2','3','4','5'].map(n=>({value:n,label:n}));
+const stLabel=list=>list.map(x=>({value:x.code,label:x.ar}));
 function paintVoice(button,listening,supported=true){
   const label=listening?'إيقاف الميكروفون':supported?'تحدث للإجابة':'الإجابة بالصوت غير متاحة في هذا المتصفح';
   button.setAttribute('aria-label',label);button.setAttribute('title',label);button.setAttribute('aria-pressed',String(listening));button.classList.toggle('recording',listening);button.replaceChildren();
@@ -277,7 +318,7 @@ function updatePortfolio(){
   chips('مجالات الخبرة',[...specialtyValues].map(value=>lbl('expertise',value)));if(profile.consent_expert)chips('خدمات أرغب في تقديمها',[...serviceValues].map(value=>lbl('service',value)));chips('خبرة مع البرامج',chosen.map(program=>program.name),true);
   [['certificates','الشهادات والمؤهلات'],['projects','المشاريع والإنجازات']].forEach(([kind,title])=>{const items=entryValues(kind).filter(item=>item.title);if(!items.length)return;host.append(node('h3',title));items.forEach(item=>{const entry=node('div',null,{class:'entry'});entry.append(node('strong',kind==='certificates'?lbl('cert_title',item.title):item.title,kind==='certificates'?{}:{'data-user-text':''}));const details=kind==='certificates'?[lbl('cert_issuer',item.issuer),item.year]:[lbl('project_type',item.type),lbl('project_role',item.role),lbl('industry',item.industry),item.year];entry.append(node('p',details.filter(Boolean).join(' · ')));if(kind==='projects'&&item.software)entry.append(node('p',progName(item.software),{'data-program-name':progName(item.software)}));if(item.result)entry.append(node('p',item.result,{'data-user-text':''}));host.append(entry);});});
   const written=chosen.filter(program=>Object.values(cardValues(cards.get(program.key))).some(Boolean));
-  if(written.length){host.append(node('h3',profile.anonymous?'مراجعاتك المجهولة — معاينة خاصة':'تجاربك مع البرامج'));written.forEach(program=>{const values=cardValues(cards.get(program.key)),entry=node('div',null,{class:'entry'});entry.append(node('strong',program.name,{'data-program-name':program.name}),node('p',values.review_title||'تجربة قيد الكتابة',values.review_title?{'data-user-text':''}:{}));if(validRating(values.overall_rating))entry.append(node('p','التقييم العام: '+values.overall_rating+' / ٥'));if(values.main_problem)entry.append(node('p',values.main_problem,{'data-user-text':''}));entry.append(node('small',completeReview(values)?'مكتملة في المعاينة — لم تُعتمد للنشر':'مسودة غير مكتملة',{class:'hint'}));host.append(entry);});}
+  if(written.length){host.append(node('h3',written.some(program=>cardValues(cards.get(program.key)).anonymous==='1')?'مراجعاتك المجهولة — معاينة خاصة':'تجاربك مع البرامج'));written.forEach(program=>{const values=cardValues(cards.get(program.key)),entry=node('div',null,{class:'entry'});entry.append(node('strong',program.name,{'data-program-name':program.name}),node('p',values.review_title||'تجربة قيد الكتابة',values.review_title?{'data-user-text':''}:{}));if(validRating(values.overall_rating))entry.append(node('p','التقييم العام: '+values.overall_rating+' / ٥'));if(values.main_problem)entry.append(node('p',values.main_problem,{'data-user-text':''}));entry.append(node('small',completeReview(values)?'مكتملة في المعاينة — لم تُعتمد للنشر':'مسودة غير مكتملة',{class:'hint'}));host.append(entry);});}
   host.append(node('p','البيانات مضافة بواسطتك. توثيق الخبرة والشهادات يحتاج مراجعة؛ لا تُمنح شارة خبير بعدد البرامج.',{class:'hint'}));
 }
 function validPhoto(file){return ['image/jpeg','image/png','image/webp'].includes(file.type)&&file.size>0&&file.size<=5*1024*1024;}
@@ -286,7 +327,8 @@ function mergeDraft(profile,programKeys,extraPrograms,values,certificates,projec
 function cardValues(card) { return Object.fromEntries([...card.querySelectorAll('[data-field]')].map(input=>[input.dataset.field,fieldValue(input)])); }
 function validRating(value, optional=false) { return (optional && value==='unrated') || /^[1-5]$/.test(value); }
 function completeReview(values) {
-  return ['lead_company','industry','company_size','decision_maker','country','city','usage_duration','still_using','review_title','intent_to_switch','recommended_to_others','relationship'].every(key=>values[key]) && ['daily_feature','main_problem','biggest_difficulty'].every(key=>values[key] && values[key].length>=30) && validRating(values.overall_rating) && validRating(values.ease_rating) && validRating(values.support_rating,true) && validRating(values.value_rating,true) && (values.relationship==='rel_none' || Boolean(values.relationship_detail && values.relationship_detail.length>=10));
+  const need=['lead_company','business_type','industry','company_size','decision_maker','country','city','usage_duration','golive_time','longer_than_told','still_using','previous_software','review_title','features_used','annual_cost','intent_to_switch','recommended_to_others','relationship','compliance_zatca','compliance_wps','compliance_gosi','compliance_qiwa','compliance_zakat'];
+  return need.every(key=>values[key]) && ['main_problem','wishlist','who_should_not_buy'].every(key=>values[key] && values[key].length>=30) && validRating(values.overall_rating) && validRating(values.ease_rating) && validRating(values.support_rating,true) && validRating(values.value_rating,true) && (values.relationship==='rel_none' || Boolean(values.relationship_detail && values.relationship_detail.length>=10));
 }
 function buildReviews(profile, programs, reviewValues) {
   return programs.map(program=>{const data=reviewValues[program.key];return {software:program.name,category:program.category,category_id:program.category_id,language:profile.language||'ar',lead_name:profile.full_name,lead_email:profile.email,lead_phone:profile.phone,anonymous:profile.anonymous,consent_expert:profile.consent_expert,...data,overall_rating:Number(data.overall_rating),ease_rating:Number(data.ease_rating),support_rating:data.support_rating==='unrated'?null:Number(data.support_rating),value_rating:data.value_rating==='unrated'?null:Number(data.value_rating)};});
@@ -297,33 +339,54 @@ function makeCard(program) {
   const body=node('div',null,{class:'card-body'});card.append(body);
   body.append(node('p','صف التجربة التي بنيت عليها تقييمك، حتى يفهم القارئ الجهة وطريقة استخدام البرنامج.',{class:'hint'}));
   const context=node('div',null,{class:'grid'});body.append(context);
-  textField(context,'lead_company','اسم المنشأة التي استخدمت فيها البرنامج',true);
+  const leadField=textField(context,'lead_company','اسم المنشأة التي استخدمت فيها البرنامج',true);leadField.parentElement.append(node('small','تُستخدم للتحقق فقط. لا تُعرض علنًا.',{class:'helper'}));
+  selectField(context,'business_type','نوع المنشأة',opts('business_type'),true);
   choice(context,'industry','قطاع المنشأة',opts('industry'),true);
   selectField(context,'company_size','حجم المنشأة',opts('company_size'));
-  selectField(context,'decision_maker','من شارك في قرار اختيار البرنامج؟',opts('decision_maker'));
+  checkList(context,'decision_maker','من شارك في قرار اختيار البرنامج؟',stLabel(catalog.OPTIONS.decision_maker||[]).map(x=>({value:x.value,label:x.label})),true,true);
   const countrySel=choice(context,'country','دولة الاستخدام',opts('country'),true),citySel=choice(context,'city','مدينة الاستخدام',[],true);countrySel._sync=()=>{fillCities(citySel,countrySel.value);citySel._toggle();};countrySel.addEventListener('change',countrySel._sync);
   selectField(context,'usage_duration','مدة استخدامك لهذا البرنامج',opts('usage_duration'));
-  selectField(context,'still_using','هل ما زلت تستخدم البرنامج؟',opts('still_using'));
+  selectField(context,'golive_time','كم استغرق تشغيل النظام فعليًا؟',opts('golive_time'));
+  selectField(context,'longer_than_told','هل استغرق أطول مما قيل لك؟',opts('longer_than_told'));
+  selectField(context,'implementer','من نفّذ التطبيق؟',opts('implementer'),false);
+  const stillSel=selectField(context,'still_using','هل ما زلت تستخدم البرنامج؟',opts('still_using'));
+  const softwareList=[...unique,...extras].map(program=>({value:program.key,label:program.name}));
+  choice(context,'previous_software','ماذا كنت تستخدم قبل ذلك؟',[...softwareList,{value:'none',label:'لا شيء / جداول بيانات'}],true);
+  const movedBox=node('div',null,{class:'grid wide'});context.append(movedBox);
+  const movedSel=choice(movedBox,'moved_to','إلى ماذا انتقلت؟',softwareList,false);
+  const movedWhy=textField(movedBox,'moved_reason','وما السبب؟',false,true);
+  function toggleMoved(){const no=isNoCode(stillSel.value);movedBox.hidden=!no;if(!no){movedSel.value='';movedSel._custom.value='';movedSel._toggle();movedWhy.value='';}}
+  body.append(node('h3','الامتثال السعودي',{class:'group-title'}),node('p','كيف تعامل البرنامج مع الامتثال السعودي؟ *',{class:'hint'}));
+  const matrix=node('div',null,{class:'matrix'});body.append(matrix);
+  catalog.STATIC.compliance_rows.forEach(row=>btnGroup(matrix,'compliance_'+row.code,row.ar,stLabel(catalog.STATIC.compliance_status),true).parentElement.classList.add('matrix-row'));
+  const complianceDetail=node('div',null,{class:'grid'});body.append(complianceDetail);textField(complianceDetail,'compliance_detail','هل من تفاصيل مهمة عن الامتثال؟',false,true);
   body.append(node('h3','التجربة العملية',{class:'group-title'}));
   const content=node('div',null,{class:'grid'});body.append(content);
   textField(content,'review_title','عنوان مختصر لتجربتك',true);
   content.append(node('p','اكتب ٣٠ حرفًا على الأقل في كل إجابة تفصيلية. اذكر مثالًا من عملك، وتجنّب بيانات العملاء أو المعلومات السرية.',{class:'hint'}));
-  textField(content,'daily_feature','ما الوظائف التي استخدمتها فعليًا؟',true,true);
+  checkList(content,'features_used','ما الوظائف التي استخدمتها فعليًا؟',stLabel(catalog.STATIC.features),true,true);
+  textField(content,'daily_feature','أي شيء آخر، أو تفاصيل عن طريقة استخدامها',false,true);
   textField(content,'main_problem','ما المشكلة التي ساعدك البرنامج على حلّها؟',true,true);
-  textField(content,'biggest_difficulty','ما أكبر صعوبة واجهتها؟',true,true);
-  textField(content,'wishlist','ما التحسين الذي تتمنى إضافته؟',false,true);
+  textField(content,'biggest_difficulty','ما أكبر صعوبة واجهتها؟',false,true);
+  textField(content,'wishlist','ما التحسين الذي تتمنى إضافته؟',true,true);
+  systemsField(content,'connected_systems','ما الأنظمة التي ربطتها به؟');
   body.append(node('h3','التقييمات',{class:'group-title'}),node('p','١ = ضعيف جدًا، ٥ = ممتاز. اختر «لا أستطيع التقييم» إذا لم تختبر الدعم أو لم تعرف التكلفة.',{class:'hint'}));
-  const ratings=node('div',null,{class:'ratings'});body.append(ratings);
-  [['overall_rating','التقييم العام'],['ease_rating','سهولة الاستخدام'],['support_rating','جودة الدعم'],['value_rating','القيمة مقابل السعر']].forEach(([key,label])=>{const select=selectField(ratings,key,label,['1','2','3','4','5']);if(key==='support_rating'||key==='value_rating')select.append(node('option','لا أستطيع التقييم',{value:'unrated'}));});
+  const ratings=node('div',null,{class:'ratings-stack'});body.append(ratings);
+  [['overall_rating','التقييم العام'],['ease_rating','سهولة الاستخدام'],['support_rating','جودة الدعم'],['value_rating','القيمة مقابل السعر']].forEach(([key,label])=>{const unrated=key==='support_rating'||key==='value_rating';btnGroup(ratings,key,label,unrated?[...FIVE,{value:'unrated',label:'لا أستطيع التقييم'}]:FIVE,true);});
+  const costBox=node('div',null,{class:'grid'});body.append(costBox);
+  const costSel=selectField(costBox,'annual_cost','كم كلّف تقريبًا سنويًا؟',opts('annual_cost'));costSel.parentElement.append(node('small','يكفي نطاق تقريبي. لا تُدخل تفاصيل العقد.',{class:'helper'}));
   const decision=node('div',null,{class:'grid'});body.append(decision);
-  selectField(decision,'intent_to_switch','لو عاد بك الوقت، هل ستختار البرنامج مجددًا؟',opts('would_choose_again'));
-  selectField(decision,'recommended_to_others','هل توصي الآخرين بهذا البرنامج؟',opts('recommend'));
+  btnGroup(decision,'intent_to_switch','لو عاد بك الوقت، هل ستختار البرنامج مجددًا؟',stLabel(catalog.OPTIONS.would_choose_again||[]),true);
+  btnGroup(decision,'recommended_to_others','هل توصي الآخرين بهذا البرنامج؟',stLabel(catalog.OPTIONS.recommend||[]),true);
+  const whoBox=textField(decision,'who_should_not_buy','من لا ينبغي أن يشتري هذا البرنامج؟',true,true);whoBox.placeholder='نوع المنشأة وحجمها التي لا يناسبها البرنامج، ولماذا.';whoBox.parentElement.classList.add('wide');
   const disclosure=node('div',null,{class:'disclosure'});body.append(disclosure);
   const relationship=selectField(disclosure,'relationship','علاقتك بالشركة المطوّرة',opts('relationship'));
   const detail=textField(disclosure,'relationship_detail','تفاصيل العلاقة');detail.parentElement.hidden=true;
   function toggleDisclosure(){const visible=Boolean(relationship.value && relationship.value!=='rel_none');detail.required=visible;detail.minLength=10;detail.parentElement.hidden=!visible;}
   relationship.addEventListener('change',toggleDisclosure);
-  card.addEventListener('input',()=>{toggleDisclosure();changed();});card.addEventListener('change',()=>{toggleDisclosure();changed();});
+  const anonBox=node('div',null,{class:'grid'});body.append(anonBox);anonField(anonBox,'أفضّل نشر هذه المراجعة دون اسمي','المراجعات المجهولة لا تُنسب إلى ملفك العام كخبير.');
+  card._refresh=()=>{toggleDisclosure();toggleMoved();};card._refresh();
+  card.addEventListener('input',()=>{card._refresh();changed();});card.addEventListener('change',()=>{card._refresh();changed();});
   return card;
 }
 function updateReviews() {
@@ -408,7 +471,7 @@ form.addEventListener('submit',async event=>{
   if(invalid){status.textContent='أكمل بياناتك الأساسية وتحقّق من البريد والروابط.';status.classList.add('error');invalid.reportValidity();invalid.focus();return;}
   const programs=[...unique,...extras].filter(program=>selected.has(program.key)),ready=programs.filter(program=>completeReview(cardValues(cards.get(program.key)))),profile=profileValues();
   if(ready.length&&!profile.authenticity){status.textContent='أكّد أن مراجعاتك مبنية على استخدامك الفعلي.';status.classList.add('error');form.elements.authenticity.focus();return;}
-  status.textContent='جارٍ الحفظ…';status.classList.remove('error');clearTimeout(saveTimer);pendingSave=false;const saved=await enqueue(()=>sendState(true));if(!saved){status.textContent=document.getElementById('draft-status').textContent;status.classList.add('error');return;}summaries.replaceChildren(node('h3','ملخص ملفك'),node('p',\`اخترت \${programs.length} برامج، وأكملت \${ready.length} مراجعات. يمكنك استكمال باقي المراجعات لاحقًا.\`),node('p',\`أضفت \${entryValues('certificates').filter(item=>item.title).length} شهادات و\${entryValues('projects').filter(item=>item.title).length} مشاريع.\`),node('p',profile.anonymous?'المراجعات المجهولة لن تُنسب إلى ملفك العام.':'المراجعات المعتمدة يمكن أن تُظهر خبرتك باسمك بعد ربط النشر.'),node('p','تم حفظ ملفك في حسابك. لم يُنشأ رابط عام بعد.'));summaries.hidden=false;summaries.focus();status.textContent='راجعت ملفك. يمكنك متابعة بنائه في أي وقت.';status.classList.remove('error');changed();summaries.hidden=false;
+  status.textContent='جارٍ الحفظ…';status.classList.remove('error');clearTimeout(saveTimer);pendingSave=false;const saved=await enqueue(()=>sendState(true));if(!saved){status.textContent=document.getElementById('draft-status').textContent;status.classList.add('error');return;}summaries.replaceChildren(node('h3','ملخص ملفك'),node('p',\`اخترت \${programs.length} برامج، وأكملت \${ready.length} مراجعات. يمكنك استكمال باقي المراجعات لاحقًا.\`),node('p',\`أضفت \${entryValues('certificates').filter(item=>item.title).length} شهادات و\${entryValues('projects').filter(item=>item.title).length} مشاريع.\`),node('p',[...cards.values()].some(card=>cardValues(card).anonymous==='1')?'المراجعات المجهولة لن تُنسب إلى ملفك العام.':'المراجعات المعتمدة يمكن أن تُظهر خبرتك باسمك بعد ربط النشر.'),node('p','تم حفظ ملفك في حسابك. لم يُنشأ رابط عام بعد.'));summaries.hidden=false;summaries.focus();status.textContent='راجعت ملفك. يمكنك متابعة بنائه في أي وقت.';status.classList.remove('error');changed();summaries.hidden=false;
 });
 
 try{
@@ -421,7 +484,7 @@ try{
   const host=document.getElementById('reviews');
   [...unique,...extras].forEach(program=>{if(program.key in state.values && !cards.has(program.key)){const card=makeCard(program);cards.set(program.key,card);host.append(card);}});
   updateReviews();Object.entries(state.values).forEach(([key,values])=>{const card=cards.get(key);if(card && values && typeof values==='object')card.querySelectorAll('[data-field]').forEach(input=>{if(input.dataset.field in values)restoreField(input,values[input.dataset.field]);});});
-  cards.forEach(card=>{const relationship=card.querySelector('[data-field=relationship]');relationship.dispatchEvent(new Event('change'));});
+  cards.forEach(card=>card._refresh&&card._refresh());
 
   if(Array.isArray(state.specialties))state.specialties.filter(value=>typeof value==='string').forEach(value=>specialtyValues.add(value));
   if(typeof state.profile.specialties==='string' && state.profile.specialties)specialtyValues.add(state.profile.specialties);

@@ -14,6 +14,7 @@ export type CurrentUser = {
   roleId: string;
   roleName: string;
   permissions: string[];
+  fieldAgent: boolean;
 };
 
 /** Reads the signed cookie, then loads the user + role FRESH from the DB (role changes apply at once). */
@@ -23,7 +24,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!id) return null;
   const { data } = await db()
     .from('rv_users')
-    .select('id,email,full_name,is_active,role_id,role:rv_roles(id,name,permissions)')
+    .select('id,email,full_name,is_active,role_id,field_agent,role:rv_roles(id,name,permissions)')
     .eq('id', id)
     .maybeSingle();
   if (!data || !data.is_active) return null;
@@ -33,6 +34,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return {
     id: data.id, email: data.email, fullName: data.full_name,
     roleId: data.role_id, roleName: role.name, permissions: role.permissions ?? [],
+    fieldAgent: Boolean((data as { field_agent?: boolean }).field_agent),
   };
 });
 

@@ -11,6 +11,52 @@ const isOther = (code: string) => code.toLowerCase() === 'other';
 
 export class ExpertInputError extends Error {}
 
+/* Fixed lists introduced by the Expert change request (A1, A6, B1). Sent to the browser in loadCatalog().STATIC and
+ * used here as the server-side whitelist, so the form and the database can never disagree. */
+export const FEATURES: Opt[] = [
+  { code: 'gl', en: 'General ledger', ar: 'الأستاذ العام' }, { code: 'ar', en: 'Accounts receivable', ar: 'الحسابات المدينة' },
+  { code: 'ap', en: 'Accounts payable', ar: 'الحسابات الدائنة' }, { code: 'einv', en: 'E-invoicing', ar: 'الفوترة الإلكترونية' },
+  { code: 'inventory', en: 'Inventory', ar: 'المخزون' }, { code: 'costing', en: 'Costing', ar: 'التكاليف' },
+  { code: 'fixed_assets', en: 'Fixed assets', ar: 'الأصول الثابتة' }, { code: 'purchasing', en: 'Purchasing', ar: 'المشتريات' },
+  { code: 'payroll', en: 'Payroll', ar: 'الرواتب' }, { code: 'multi_entity', en: 'Multi-entity', ar: 'تعدد الكيانات' },
+  { code: 'multi_currency', en: 'Multi-currency', ar: 'تعدد العملات' }, { code: 'reporting', en: 'Reporting & dashboards', ar: 'التقارير ولوحات المتابعة' },
+  { code: 'budgeting', en: 'Budgeting', ar: 'الموازنات' }, { code: 'project', en: 'Project accounting', ar: 'محاسبة المشاريع' },
+  { code: 'other', en: 'Other', ar: 'أخرى' },
+];
+export const COMPLIANCE_ROWS: Opt[] = [
+  { code: 'zatca', en: 'ZATCA e-invoicing (Phase 2)', ar: 'الفوترة الإلكترونية — هيئة الزكاة (المرحلة الثانية)' },
+  { code: 'wps', en: 'WPS / Mudad', ar: 'حماية الأجور / مدد' }, { code: 'gosi', en: 'GOSI', ar: 'التأمينات الاجتماعية' },
+  { code: 'qiwa', en: 'Qiwa', ar: 'قوى' }, { code: 'zakat', en: 'Zakat & tax filing', ar: 'الزكاة والإقرارات الضريبية' },
+];
+export const COMPLIANCE_STATUS: Opt[] = [
+  { code: 'worked', en: 'Worked out of the box', ar: 'عمل مباشرة دون إعداد' },
+  { code: 'custom', en: 'Needed customisation or a third party', ar: 'احتاج تخصيصًا أو طرفًا ثالثًا' },
+  { code: 'failed', en: 'Failed or not supported', ar: 'فشل أو غير مدعوم' },
+  { code: 'none', en: 'Did not use it', ar: 'لم أستخدمه' },
+];
+export const SYSTEMS: Opt[] = [
+  { code: 'salla', en: 'Salla', ar: 'سلة' }, { code: 'zid', en: 'Zid', ar: 'زد' }, { code: 'shopify', en: 'Shopify', ar: 'Shopify' },
+  { code: 'woocommerce', en: 'WooCommerce', ar: 'WooCommerce' }, { code: 'bank_feed', en: 'Bank feed', ar: 'الربط البنكي' },
+  { code: 'pos', en: 'POS system', ar: 'نقاط البيع' }, { code: 'payroll', en: 'Payroll system', ar: 'نظام الرواتب' },
+  { code: 'crm', en: 'CRM', ar: 'إدارة العملاء' }, { code: 'gov_portal', en: 'Government portal', ar: 'بوابة حكومية' },
+  { code: 'other', en: 'Other', ar: 'أخرى' },
+];
+export const SYSTEM_STATUS: Opt[] = [
+  { code: 'worked', en: 'Worked well', ar: 'عمل جيدًا' }, { code: 'effort', en: 'Worked but needed effort', ar: 'عمل لكن بجهد' },
+  { code: 'failed', en: 'Did not work', ar: 'لم يعمل' },
+];
+const codes = (l: Opt[]) => new Set(l.map((o) => o.code));
+/** 'a,b,c' -> only the codes that are in the allowed list, de-duplicated */
+const csv = (v: unknown, allowed: Set<string>): string[] =>
+  [...new Set(txt(v, 600).split(',').map((s) => s.trim()).filter((s) => allowed.has(s)))];
+/** 'salla:worked;zid:effort' -> [{system,status}] */
+function parseSystems(v: unknown): { system: string; status: string }[] {
+  const sys = codes(SYSTEMS), st = codes(SYSTEM_STATUS), seen = new Set<string>();
+  return txt(v, 600).split(';').map((p) => p.split(':')).flatMap(([a, b]) =>
+    sys.has(a) && st.has(b) && !seen.has(a) ? (seen.add(a), [{ system: a, status: b }]) : []);
+}
+const serSystems = (j: unknown) => (Array.isArray(j) ? j.map((x: Row) => `${x.system}:${x.status}`).join(';') : '');
+
 /* --------------------------------------------------------------------------------------------
  * Small helpers
  * ------------------------------------------------------------------------------------------ */
@@ -82,8 +128,8 @@ async function lookups(): Promise<Lookups> {
 export async function loadCatalog() {
   const [lk, cats, sw] = await Promise.all([
     lookups(),
-    all('rv_categories', 'id,name_en,name_ar'),
-    all('rv_software', 'id,category_id,name'),
+    all('rv_categories', 'id,name_en,name_ar,is_live,parent_id'),
+    all('rv_software', 'id,category_id,name,display_name'),
   ]);
   const OPTIONS: Record<string, Opt[]> = {
     professional_role: lk.roles, experience: lk.experience, expertise: lk.expertise, service: lk.services,
@@ -99,11 +145,13 @@ export async function loadCatalog() {
     (CITIES[cc] ??= []).push({ code: c.code, ar: c.ar, en: c.en });
   }
   const SOFTWARE: Record<string, { id: string; ar: string; en: string }[]> = {};
-  for (const s of sw) (SOFTWARE[s.category_id] ??= []).push({ id: s.id, ar: s.name, en: s.name });
+  // A4: one catalogue by ID, public display_name (fixed casing) shown to experts too
+  for (const s of sw) (SOFTWARE[s.category_id] ??= []).push({ id: s.id, ar: s.display_name || s.name, en: s.display_name || s.name });
 
   return {
-    CATEGORIES: cats.map((c) => ({ id: c.id, ar: c.name_ar || c.name_en, en: c.name_en })),
+    CATEGORIES: cats.filter((c) => c.is_live || SOFTWARE[c.id]?.length).map((c) => ({ id: c.id, ar: c.name_ar || c.name_en, en: c.name_en })),
     SOFTWARE, OPTIONS, CITIES,
+    STATIC: { features: FEATURES, compliance_rows: COMPLIANCE_ROWS, compliance_status: COMPLIANCE_STATUS, systems: SYSTEMS, system_status: SYSTEM_STATUS },
   };
 }
 
@@ -157,7 +205,6 @@ export async function loadExpertState(user: CurrentUser) {
       lead_company: s(r.lead_company),
       industry: s(r.industry_code ?? r.industry_other),
       company_size: s(r.company_size_code),
-      decision_maker: s(r.decision_maker_code),
       country: s((r.country_id && countryCode.get(r.country_id)) ?? r.country_other),
       city: s((r.city_id && cityCode.get(r.city_id)) ?? r.city_other),
       usage_duration: s(r.usage_duration_code),
@@ -175,6 +222,17 @@ export async function loadExpertState(user: CurrentUser) {
       recommended_to_others: s(r.recommended_code),
       relationship: s(r.relationship_code),
       relationship_detail: s(r.relationship_detail),
+      // --- change request ---
+      compliance_zatca: s(obj(r.compliance).zatca), compliance_wps: s(obj(r.compliance).wps), compliance_gosi: s(obj(r.compliance).gosi),
+      compliance_qiwa: s(obj(r.compliance).qiwa), compliance_zakat: s(obj(r.compliance).zakat),
+      compliance_detail: s(r.compliance_detail), who_should_not_buy: s(r.who_should_not_buy),
+      annual_cost: s(r.annual_cost_code), golive_time: s(r.golive_time_code), longer_than_told: s(r.longer_than_told_code),
+      implementer: s(r.implementer_code), previous_software: s(r.previous_software),
+      moved_to: s(r.moved_to_software), moved_reason: s(r.moved_to_reason),
+      connected_systems: serSystems(r.connected_systems),
+      features_used: arr(r.features_used).join(','),
+      decision_maker: arr(r.decision_maker_codes).length ? arr(r.decision_maker_codes).join(',') : s(r.decision_maker_code),
+      business_type: s(r.business_type_code), anonymous: r.anonymous ? '1' : '',
     };
   }
 
@@ -186,7 +244,7 @@ export async function loadExpertState(user: CurrentUser) {
       professional_role: s(p.professional_role_code ?? p.professional_role_other),
       experience_years: s(p.experience_range_code),
       linkedin_url: s(p.linkedin_url), consultant_bio: s(p.bio),
-      consent_expert: !!p.consent_expert, anonymous: !!p.anonymous, authenticity: !!p.authenticity_confirmed,
+      consent_expert: !!p.consent_expert, authenticity: !!p.authenticity_confirmed,
     },
     selected, extras, values,
     certificates: (certs.data ?? []).map((r) => ({
@@ -328,10 +386,21 @@ export async function saveExpertProfile(user: CurrentUser, body: unknown): Promi
     const supportUnrated = v.support_rating === 'unrated';
     const valueUnrated = v.value_rating === 'unrated';
     const R = (k: string) => txt(v[k], 2000);
+    // ---- change-request fields (whitelisted) ----
+    const compStatus = codes(COMPLIANCE_STATUS);
+    const compliance: Row = {};
+    for (const o of COMPLIANCE_ROWS) { const x = txt(v['compliance_' + o.code], 20); if (compStatus.has(x)) compliance[o.code] = x; }
+    const featuresUsed = csv(v.features_used, codes(FEATURES));
+    const deciders = csv(v.decision_maker, new Set(lk.options.filter((o) => o.group_code === 'decision_maker').map((o) => o.code)));
+    const prev = txt(v.previous_software, 120);
     const complete =
-      ['lead_company', 'industry', 'company_size', 'decision_maker', 'country', 'city', 'usage_duration', 'still_using',
-        'review_title', 'intent_to_switch', 'recommended_to_others', 'relationship'].every((k) => !!R(k)) &&
-      ['daily_feature', 'main_problem', 'biggest_difficulty'].every((k) => R(k).length >= 30) &&
+      ['lead_company', 'business_type', 'industry', 'company_size', 'country', 'city', 'usage_duration', 'still_using',
+        'review_title', 'intent_to_switch', 'recommended_to_others', 'relationship',
+        'who_should_not_buy_ok', 'annual_cost', 'golive_time', 'longer_than_told', 'previous_software'].every((k) =>
+        k === 'who_should_not_buy_ok' ? R('who_should_not_buy').length >= 30 : !!R(k)) &&
+      deciders.length > 0 && featuresUsed.length > 0 &&
+      COMPLIANCE_ROWS.every((o) => !!compliance[o.code]) &&
+      ['main_problem', 'wishlist'].every((k) => R(k).length >= 30) &&   // B2: wishlist now required, biggest_difficulty optional
       rating(v.overall_rating) !== null && rating(v.ease_rating) !== null &&
       (supportUnrated || rating(v.support_rating) !== null) && (valueUnrated || rating(v.value_rating) !== null) &&
       (strict('relationship', v.relationship) === 'rel_none' || R('relationship_detail').length >= 10);
@@ -341,7 +410,8 @@ export async function saveExpertProfile(user: CurrentUser, body: unknown): Promi
       lead_company: nul(txt(v.lead_company, 120)),
       industry_code: industry.code, industry_other: industry.other,
       company_size_code: strict('company_size', v.company_size),
-      decision_maker_code: strict('decision_maker', v.decision_maker),
+      decision_maker_code: deciders[0] ?? null,          // legacy single column keeps the first pick
+      decision_maker_codes: deciders,                     // B3 multi-select
       country_id: cid, country_other: cid ? null : nul(countryRaw),
       city_id: cityFk, city_other: cityFk ? null : nul(cityRaw),
       usage_duration_code: strict('usage_duration', v.usage_duration),
@@ -356,6 +426,19 @@ export async function saveExpertProfile(user: CurrentUser, body: unknown): Promi
       recommended_code: strict('recommend', v.recommended_to_others),
       relationship_code: strict('relationship', v.relationship),
       relationship_detail: nul(R('relationship_detail')),
+      compliance, compliance_detail: nul(R('compliance_detail')),                       // A1
+      who_should_not_buy: nul(R('who_should_not_buy')),                                 // A2
+      annual_cost_code: strict('annual_cost', v.annual_cost),                           // A3
+      golive_time_code: strict('golive_time', v.golive_time),                           // A4
+      longer_than_told_code: strict('longer_than_told', v.longer_than_told),
+      implementer_code: strict('implementer', v.implementer),
+      previous_software: nul(prev),                                                     // A5
+      moved_to_software: nul(txt(v.moved_to, 120)), moved_to_reason: nul(R('moved_reason')),
+      connected_systems: parseSystems(v.connected_systems),                             // A6
+      features_used: featuresUsed,                                                      // B1
+      business_type_code: strict('business_type', v.business_type),                     // B6 (published instead of lead_company)
+      anonymous: v.anonymous === '1',                                                   // B5 per review
+      review_type: 'expert',                                                            // A3 (public spec)
       is_complete: complete, sort_order: reviewRows.length,
     });
   }
@@ -405,7 +488,7 @@ export async function saveExpertProfile(user: CurrentUser, body: unknown): Promi
     professional_role_code: role.code, professional_role_other: role.other,
     experience_range_code: expSet.has(expRaw) ? expRaw : null,
     linkedin_url: httpUrl(p.linkedin_url), bio: nul(txt(p.consultant_bio, 2000)),
-    consent_expert: p.consent_expert === true, anonymous: p.anonymous === true, authenticity_confirmed: p.authenticity === true,
+    consent_expert: p.consent_expert === true, authenticity_confirmed: p.authenticity === true,
     photo_url,
     submitted_at: submit ? new Date().toISOString() : existing?.submitted_at ?? null,
     updated_at: new Date().toISOString(),

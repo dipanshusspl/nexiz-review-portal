@@ -13,7 +13,7 @@ export default async function SoftwarePage({ searchParams }: { searchParams: Pro
   const images = can(user, 'images.manage');
   if (!manage && !images) redirect('/review?error=forbidden');
   const sp = await searchParams;
-  const [items, cats] = await Promise.all([listSoftware(), listCategories()]);
+  const [items, cats] = await Promise.all([listSoftware(), listCategories({ all: true })]);
   const catById = new Map(cats.map((c) => [c.id, c.name_en]));
   const editing = manage ? items.find((s) => s.id === sp.edit) : undefined;
   return (
@@ -26,6 +26,7 @@ export default async function SoftwarePage({ searchParams }: { searchParams: Pro
           {editing && <input type="hidden" name="id" value={editing.id} />}
           <div className="grid2">
             <label>Name<input name="name" defaultValue={editing?.name} required /></label>
+            <label>Display name (shown to the public, fix the casing e.g. Qaema, VOM)<input name="display_name" defaultValue={editing?.display_name ?? editing?.name} /></label>
             <label>Category
               <select name="category_id" defaultValue={editing?.category_id} required>
                 <option value="">Select...</option>
@@ -54,7 +55,7 @@ export default async function SoftwarePage({ searchParams }: { searchParams: Pro
           {items.map((s) => (
             <tr key={s.id}>
               <td><EntityImage url={s.image_url} name={s.name} size={44} showName /></td>
-              <td><b>{s.name}</b><div className="muted small">{s.website}</div></td>
+              <td><b>{s.display_name || s.name}</b><div className="muted small">{s.website}</div></td>
               <td>{catById.get(s.category_id) ?? '?'}</td>
               <td className="actions">
                 {!manage && images && (

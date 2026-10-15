@@ -1,0 +1,147 @@
+-- Nexiz change request 15 Oct 2026 — run once in the Supabase SQL editor.
+-- All statements are additive / idempotent. Nothing is dropped or deleted.
+
+-- ───────── Part 1: categories (hide, don't delete) ─────────
+alter table rv_categories add column if not exists is_live boolean not null default true;
+alter table rv_categories add column if not exists parent_id uuid references rv_categories(id);
+
+-- Hide everything, then switch on the 6 launch categories (match by slug; adjust slugs if yours differ)
+update rv_categories set is_live = false;
+update rv_categories set is_live = true
+ where slug in ('accounting-invoicing','erp','hr-payroll','crm','pos-restaurants','e-commerce');
+-- Merge the two restaurant categories into POS & Restaurants as sub-tags (records kept)
+update rv_categories c set parent_id = (select id from rv_categories where slug = 'pos-restaurants')
+ where c.slug in ('restaurant-order-aggregation','restaurant-reservation');
+
+-- Demand capture: "Can't find your category? Tell us."
+create table if not exists rv_category_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references rv_users(id) on delete set null,
+  text text not null,
+  created_at timestamptz not null default now()
+);
+
+-- ───────── A4: catalogue ─────────
+alter table rv_software add column if not exists display_name text;
+update rv_software set display_name = initcap(name) where display_name is null;
+-- Fix lower-case names called out in the request
+update rv_software set display_name = case lower(name)
+  when 'qaema' then 'Qaema' when 'salis' then 'Salis' when 'vom' then 'VOM' when 'wazen' then 'Wazen'
+  else display_name end
+ where lower(name) in ('qaema','salis','vom','wazen');
+
+-- ───────── users: field agents ─────────
+alter table rv_users add column if not exists field_agent boolean not null default false;
+
+-- ───────── Public reviews: shared schema (A1/A2/A3/A5/A6, P1–P7) ─────────
+alter table rv_reviews add column if not exists review_type text not null default 'user' check (review_type in ('expert','user'));
+alter table rv_reviews add column if not exists rating_overall int check (rating_overall between 1 and 5);
+alter table rv_reviews add column if not exists rating_ease    int check (rating_ease    between 1 and 5);
+alter table rv_reviews add column if not exists rating_support int check (rating_support between 1 and 5);
+alter table rv_reviews add column if not exists rating_value   int check (rating_value   between 1 and 5);
+update rv_reviews set rating_overall = rating where rating_overall is null;
+alter table rv_reviews add column if not exists usage_duration text;
+update rv_reviews set usage_duration = duration where usage_duration is null;
+alter table rv_reviews add column if not exists pros text;                 -- P1 What works well
+alter table rv_reviews add column if not exists cons text;                 -- P1 What doesn't
+alter table rv_reviews add column if not exists would_recommend boolean;   -- P2
+alter table rv_reviews add column if not exists reviewer_role text;        -- P3
+alter table rv_reviews add column if not exists company_size text;         -- P3
+alter table rv_reviews add column if not exists zatca_status text;         -- P4
+alter table rv_reviews add column if not exists still_using boolean;       -- P5
+alter table rv_reviews add column if not exists moved_to_software_id uuid references rv_software(id) on delete set null; -- P5
+alter table rv_reviews add column if not exists anonymous boolean not null default false; -- A5
+alter table rv_reviews add column if not exists source text not null default 'web' check (source in ('web','field')); -- P7
+alter table rv_reviews add column if not exists verified boolean not null default false;
+alter table rv_reviews add column if not exists collected_by uuid references rv_users(id) on delete set null;
+alter table rv_reviews add column if not exists respondent_id uuid;
+alter table rv_reviews add column if not exists confirm_token text unique;
+alter table rv_reviews add column if not exists verified_at timestamptz;
+-- web reviews are verified by login; field reviews only after the link is opened
+update rv_reviews set verified = true where source = 'web' and verified = false;
+
+-- P7: respondent PII — never published
+create table if not exists rv_respondents (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  contact text not null,        -- work email or mobile
+  company text not null,
+  created_by uuid references rv_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (contact)
+);
+alter table rv_reviews add constraint rv_reviews_respondent_fk
+  foreign key (respondent_id) references rv_respondents(id) on delete set null;
+
+-- A6: one review per account per product (already enforced by onConflict) + one per respondent per product
+create unique index if not exists rv_reviews_resp_sw_uq on rv_reviews (software_id, respondent_id) where respondent_id is not null;
+-- field reviews have no login owner of their own: let user_id stay (agent) but allow several per agent
+-- → drop the old (software_id,user_id) uniqueness ONLY for field rows:
+--   (if your constraint is named differently, check: select conname from pg_constraint where conrelid='rv_reviews'::regclass;)
+alter table rv_reviews drop constraint if exists rv_reviews_software_id_user_id_key;
+create unique index if not exists rv_reviews_sw_user_web_uq on rv_reviews (software_id, user_id) where source = 'web';
+
+-- ───────── A1: single duration list shared by both forms ─────────
+-- Expert form reads rv_lk_options where group_code = 'usage_duration'. Make it match the public list.
+-- Codes are shared with lib/i18n.ts DURATIONS: lt_6m, 6_12m, 1_2y, 2_5y, 5y_plus
+delete from rv_lk_options where group_code = 'usage_duration'
+  and code not in ('lt_6m','6_12m','1_2y','2_5y','5y_plus')
+  and not exists (select 1 from rv_expert_software_reviews r where r.usage_duration_code = rv_lk_options.code);
+insert into rv_lk_options (code, group_code, name_en, name_ar, sort_order) values
+  ('lt_6m','usage_duration','< 6 months','أقل من 6 أشهر',1),
+  ('6_12m','usage_duration','6–12 months','6–12 شهراً',2),
+  ('1_2y','usage_duration','1–2 years','1–2 سنة',3),
+  ('2_5y','usage_duration','2–5 years','2–5 سنوات',4),
+  ('5y_plus','usage_duration','5+ years','أكثر من 5 سنوات',5)
+on conflict (code) do update set group_code = excluded.group_code, name_en = excluded.name_en, name_ar = excluded.name_ar, sort_order = excluded.sort_order;
+-- NOTE: if rv_lk_options has no sort_order column or code is not unique, tell me and I'll adapt.
+
+-- Dropdown lists needed by the expert form (new)
+insert into rv_lk_options (code, group_code, name_en, name_ar, sort_order) values
+  ('cost_lt2k','annual_cost','Under SAR 2,000','أقل من 2,000 ريال',1),
+  ('cost_2k_10k','annual_cost','SAR 2,000–10,000','2,000–10,000 ريال',2),
+  ('cost_10k_50k','annual_cost','SAR 10,000–50,000','10,000–50,000 ريال',3),
+  ('cost_50k_200k','annual_cost','SAR 50,000–200,000','50,000–200,000 ريال',4),
+  ('cost_gt200k','annual_cost','Over SAR 200,000','أكثر من 200,000 ريال',5),
+  ('cost_unknown','annual_cost','Don''t know','لا أعرف',6),
+  ('golive_lt1m','golive_time','Under 1 month','أقل من شهر',1),
+  ('golive_1_3m','golive_time','1–3 months','1–3 أشهر',2),
+  ('golive_3_6m','golive_time','3–6 months','3–6 أشهر',3),
+  ('golive_6_12m','golive_time','6–12 months','6–12 شهراً',4),
+  ('golive_gt12m','golive_time','Over 12 months','أكثر من 12 شهراً',5),
+  ('golive_na','golive_time','Not involved','لم أشارك',6),
+  ('longer_much','longer_than_told','Much longer','أطول بكثير',1),
+  ('longer_slight','longer_than_told','Slightly longer','أطول قليلاً',2),
+  ('longer_asexp','longer_than_told','As expected','كما هو متوقع',3),
+  ('longer_faster','longer_than_told','Faster than expected','أسرع من المتوقع',4),
+  ('longer_dk','longer_than_told','Don''t know','لا أعرف',5),
+  ('impl_vendor','implementer','Vendor directly','المورّد مباشرة',1),
+  ('impl_partner','implementer','Vendor''s certified partner','شريك معتمد للمورّد',2),
+  ('impl_consultant','implementer','Independent consultant','مستشار مستقل',3),
+  ('impl_inhouse','implementer','In-house','داخلياً',4),
+  ('biz_micro','business_type','Micro / small shop','منشأة صغيرة جداً',1),
+  ('biz_sme','business_type','SME','منشأة صغيرة ومتوسطة',2),
+  ('biz_mid','business_type','Mid-size company','شركة متوسطة',3),
+  ('biz_large','business_type','Large company / group','شركة كبيرة / مجموعة',4),
+  ('biz_gov','business_type','Government / non-profit','جهة حكومية / غير ربحية',5),
+  ('biz_other','business_type','Other','أخرى',6)
+on conflict (code) do nothing;
+
+-- ───────── Expert review table: new columns (A1–A6, B1–B6) ─────────
+alter table rv_expert_software_reviews add column if not exists compliance jsonb;            -- {zatca,wps,gosi,qiwa,zakat: worked|custom|failed|none}
+alter table rv_expert_software_reviews add column if not exists compliance_detail text;
+alter table rv_expert_software_reviews add column if not exists who_should_not_buy text;     -- A2
+alter table rv_expert_software_reviews add column if not exists annual_cost_code text;       -- A3
+alter table rv_expert_software_reviews add column if not exists golive_time_code text;       -- A4.1
+alter table rv_expert_software_reviews add column if not exists longer_than_told_code text;  -- A4.2
+alter table rv_expert_software_reviews add column if not exists implementer_code text;       -- A4.3
+alter table rv_expert_software_reviews add column if not exists previous_software text;      -- A5.1 (software id, 'none', or free text)
+alter table rv_expert_software_reviews add column if not exists moved_to_software text;      -- A5.2
+alter table rv_expert_software_reviews add column if not exists moved_to_reason text;
+alter table rv_expert_software_reviews add column if not exists connected_systems jsonb;     -- A6 [{system,status}]
+alter table rv_expert_software_reviews add column if not exists features_used jsonb;         -- B1 ['gl','ar',...]
+alter table rv_expert_software_reviews add column if not exists decision_maker_codes jsonb;  -- B3 multi-select
+alter table rv_expert_software_reviews add column if not exists business_type_code text;     -- B6 published instead of lead_company
+alter table rv_expert_software_reviews add column if not exists review_type text not null default 'expert';
+alter table rv_expert_profiles add column if not exists anonymous_default boolean;           -- (kept for history; B5 is now per review)
+alter table rv_expert_software_reviews add column if not exists anonymous boolean not null default false; -- B5

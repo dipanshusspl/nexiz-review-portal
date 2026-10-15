@@ -70,6 +70,7 @@ export async function saveUser(fd: FormData) {
   const roleId = str(fd, 'role_id', 60);
   const password = String(fd.get('password') ?? '');
   const isActive = fd.get('is_active') === 'on';
+  const fieldAgent = fd.get('field_agent') === 'on';
   if (!fullName || !roleId) return back(path, 'error', 'Name and role are required.');
 
   if (!id) {
@@ -77,7 +78,7 @@ export async function saveUser(fd: FormData) {
     const problem = passwordProblem(password);
     if (problem) return back(path, 'error', problem);
     const { error } = await db().from('rv_users').insert({
-      email, full_name: fullName, role_id: roleId, password_hash: await hashPassword(password), is_active: true,
+      email, full_name: fullName, role_id: roleId, password_hash: await hashPassword(password), is_active: true, field_agent: fieldAgent,
     });
     return error ? back(path, 'error', dbMessage(error)) : done(path, `User ${email} created.`);
   }
@@ -90,7 +91,7 @@ export async function saveUser(fd: FormData) {
     return back(path, 'error', 'You cannot remove or deactivate the last active admin.');
   }
   if (id === me.id && !isActive) return back(path, 'error', 'You cannot deactivate yourself.');
-  const patch: Record<string, unknown> = { full_name: fullName, role_id: roleId, is_active: isActive };
+  const patch: Record<string, unknown> = { full_name: fullName, role_id: roleId, is_active: isActive, field_agent: fieldAgent };
   if (password) {
     const problem = passwordProblem(password);
     if (problem) return back(path, 'error', problem);
@@ -124,6 +125,7 @@ export async function saveCategory(fd: FormData) {
   const row: Record<string, unknown> = {
     name_en: nameEn, name_ar: optional(fd, 'name_ar', 100),
     slug: slugify(str(fd, 'slug', 80) || nameEn), sort_order: Number(fd.get('sort_order')) || 0,
+    is_live: fd.get('is_live') === 'on', parent_id: optional(fd, 'parent_id', 60),
     updated_at: new Date().toISOString(),
   };
   if (can(me, 'images.manage')) {
@@ -174,7 +176,7 @@ export async function saveSoftware(fd: FormData) {
   const categoryId = str(fd, 'category_id', 60);
   if (!name || !categoryId) return back(path, 'error', 'Name and category are required.');
   const row: Record<string, unknown> = {
-    name, category_id: categoryId, slug: slugify(str(fd, 'slug', 80) || name),
+    name, display_name: optional(fd, 'display_name', 120) ?? name, category_id: categoryId, slug: slugify(str(fd, 'slug', 80) || name),
     website: optional(fd, 'website', 300), description: optional(fd, 'description', 1000),
     sort_order: Number(fd.get('sort_order')) || 0, updated_at: new Date().toISOString(),
   };
