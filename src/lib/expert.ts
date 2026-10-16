@@ -9,6 +9,9 @@ type Opt = { code: string; ar: string; en: string };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isOther = (code: string) => code.toLowerCase() === 'other';
 
+import { createHash } from 'node:crypto';
+import { extremeRatings } from '@/lib/review-rules';
+
 export class ExpertInputError extends Error {}
 
 /* Fixed lists introduced by the Expert change request (A1, A6, B1). Sent to the browser in loadCatalog().STATIC and
@@ -443,6 +446,37 @@ export async function saveExpertProfile(user: CurrentUser, body: unknown): Promi
     });
   }
 
+  // ---- moderation (client answer 3): EVERY expert review is read by a person before it is public ----
+  // The form re-saves all review rows on every autosave, so we keep the approval only while the content is unchanged.
+  // Edited content goes back to 'pending'. Nothing here can mark a review approved on its own.
+  if (existing?.id) {
+    const { data: prevRows } = await db().from('rv_expert_software_reviews')
+      .select('software_id,custom_software_name,content_sig,status,reviewed_by,reviewed_at,reject_reason_code,created_at,escalation_reason').eq('profile_id', existing.id);
+    const prevByKey = new Map<string, Row>();
+    for (const r of (prevRows ?? []) as Row[]) prevByKey.set(r.software_id ?? 'c:' + normalize(r.custom_software_name), r);
+    for (const row of reviewRows) {
+      const key = (row.software_id as string | null) ?? 'c:' + normalize(row.custom_software_name as string);
+      const { sort_order: _s, ...content } = row; void _s;
+      const sig = createHash('sha256').update(JSON.stringify(content)).digest('hex');
+      const prev = prevByKey.get(key);
+      row.content_sig = sig;
+      const extreme = extremeRatings([row.overall_rating as number, row.ease_rating as number, row.support_rating as number, row.value_rating as number]);
+      if (prev && prev.content_sig === sig) {
+        Object.assign(row, { status: prev.status, reviewed_by: prev.reviewed_by, reviewed_at: prev.reviewed_at, reject_reason_code: prev.reject_reason_code, created_at: prev.created_at });
+        row.escalated = true; row.escalation_reason = prev.escalation_reason === 'vendor_dispute' ? 'vendor_dispute' : extreme ? 'all_ratings_extreme' : 'expert';
+      } else {
+        Object.assign(row, { status: 'pending', escalated: true, escalation_reason: extreme ? 'all_ratings_extreme' : 'expert' });
+      }
+    }
+  } else {
+    for (const row of reviewRows) {
+      const { sort_order: _s, ...content } = row; void _s;
+      row.content_sig = createHash('sha256').update(JSON.stringify(content)).digest('hex');
+      const extreme = extremeRatings([row.overall_rating as number, row.ease_rating as number, row.support_rating as number, row.value_rating as number]);
+      Object.assign(row, { status: 'pending', escalated: true, escalation_reason: extreme ? 'all_ratings_extreme' : 'expert' });
+    }
+  }
+
   // ---- certificates, projects, tags ----------------------------------------------------
   const certRows = arr(st.certificates).slice(0, 50).map(obj).map((c, i) => {
     const title = pick('cert_title', c.title), issuer = pick('cert_issuer', c.issuer);
@@ -510,6 +544,19 @@ export async function saveExpertProfile(user: CurrentUser, body: unknown): Promi
     reviewRows.length ? db().from('rv_expert_software_reviews').insert(withPid(reviewRows)) : null,
   ]);
   for (const r of ins) if (r && r.error) throw new Error(r.error.message);
+
+  // form timing (client answer 5): stored once, when the expert submits. Best effort, never blocks the save.
+  if (submit) {
+    try {
+      const t = obj(b.timing);
+      const total = Math.round(Number(t.total_ms));
+      if (Number.isFinite(total) && total > 0 && total < 4 * 3600_000) {
+        const fields: Record<string, number> = {};
+        for (const [k, v] of Object.entries(obj(t.fields)).slice(0, 80)) if (/^[a-z_]{1,40}$/.test(k) && Number.isFinite(Number(v))) fields[k] = Math.round(Number(v));
+        await db().from('rv_form_timing').insert({ form: 'expert', user_id: user.id, total_ms: total, field_ms: fields });
+      }
+    } catch { /* ignore */ }
+  }
 
   return { photo_url, status };
 }

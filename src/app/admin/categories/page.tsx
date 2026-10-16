@@ -41,6 +41,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
             <label>Sort order<input name="sort_order" type="number" defaultValue={editing?.sort_order ?? 0} /></label>
           </div>
           <label className="check"><input type="checkbox" name="is_live" defaultChecked={editing?.is_live ?? false} /> Live (shown on the public /review page). Hidden categories keep their records and routes.</label>
+          <label className="check"><input type="checkbox" name="live_override" defaultChecked={editing?.live_override} /> Force live (override the 5 products / 3 reviews rule, e.g. for a partner demo)</label>
           <label>Sub-tag of (merge into another category)
             <select name="parent_id" defaultValue={editing?.parent_id ?? ''}>
               <option value="">— none (top-level) —</option>

@@ -45,7 +45,7 @@ export function can(user: CurrentUser | null, perm: PermissionKey): boolean {
 
 export const canOpenAdmin = (u: CurrentUser | null) =>
   can(u, 'users.manage') || can(u, 'roles.manage') || can(u, 'categories.manage') ||
-  can(u, 'software.manage') || can(u, 'images.manage');
+  can(u, 'software.manage') || can(u, 'images.manage') || can(u, 'reviews.moderate');
 
   export const isExpertPanelUser = (u: CurrentUser | null): boolean =>
   !!u && u.roleName !== ADMIN_ROLE && u.permissions.includes('expert.panel');

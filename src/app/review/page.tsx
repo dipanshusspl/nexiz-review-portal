@@ -11,6 +11,12 @@ import { ZATCA_CATEGORY_SLUGS, catName, categoryScopeIds, getCategoryBySlug, get
 import { submitCategoryRequest } from '@/app/actions/review';
 import { COMPANY_SIZES, DURATIONS, ROLES, ZATCA, getDict, getLang } from '@/lib/i18n';
 import { headers } from 'next/headers';
+import TrustBar from '@/components/TrustBar';
+import Footer from '@/components/Footer';
+import { CheckIcon, PencilIcon } from '@/components/Icons';
+import { categoryStats, GO_LIVE_MIN_PRODUCTS, GO_LIVE_MIN_REVIEWS } from '@/lib/stats';
+import { db } from '@/lib/supabase/admin';
+import { whatsappLink } from '@/lib/notify';
 import { isExpertPanelUser, requireUser } from '@/lib/auth/current-user';
 
 const hueOf = (s: string) => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
@@ -39,14 +45,16 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <Header user={user} lang={lang} t={t} current={current} />
+      <TrustBar lang={lang} />
       <main className="page">
         <Stepper step={step} labels={labels} />
         <Flash ok={sp.ok} error={sp.error} map={flashMap} />
 
         {step === 1 && <Step1 lang={lang} t={t} />}
         {step === 2 && category && <Step2 category={category} lang={lang} t={t} />}
-        {step === 3 && category && software && <Step3 user={user} category={category} software={software} lang={lang} t={t} token={sp.token} />}
+        {step === 3 && category && software && <Step3 user={user} category={category} software={software} lang={lang} t={t} token={sp.token} mail={sp.mail} />}
       </main>
+      <Footer lang={lang} />
     </>
   );
 }
@@ -55,9 +63,17 @@ type T = ReturnType<typeof getDict>;
 
 async function Step1({ lang, t }: { lang: 'en' | 'ar'; t: T }) {
   const cats = await listCategories();
-  const tiles: Tile[] = cats.map((c) => ({
-    id: c.id, href: `/review?category=${c.slug}`, name: catName(c, lang), imageUrl: c.image_url, hue: hueOf(c.name_en),
-  }));
+  const stats = await categoryStats();
+  const tiles: Tile[] = cats.map((c) => {
+    const s = stats.get(c.id) ?? { products: 0, reviews: 0 };
+    // a live category that is still thin says so (client answer 4), it is never hidden again
+    const thin = s.products < GO_LIVE_MIN_PRODUCTS || s.reviews < GO_LIVE_MIN_REVIEWS;
+    return {
+      id: c.id, href: `/review?category=${c.slug}`, name: catName(c, lang), imageUrl: c.image_url, hue: hueOf(c.name_en),
+      meta: lang === 'ar' ? `${s.products} منتجات · ${s.reviews} تقييمات` : `${s.products} products · ${s.reviews} reviews`,
+      note: thin ? (lang === 'ar' ? `${s.reviews} تقييمات فقط حتى الآن` : `Only ${s.reviews} reviews so far`) : undefined,
+    };
+  });
   return (
     <section>
       <h2 className="title">{t.s1Title}</h2>
@@ -91,9 +107,9 @@ async function Step2({ category, lang, t }: { category: Awaited<ReturnType<typeo
   );
 }
 
-async function Step3({ user, category, software, lang, t, token }: {
+async function Step3({ user, category, software, lang, t, token, mail }: {
   user: Awaited<ReturnType<typeof requireUser>>; category: NonNullable<Awaited<ReturnType<typeof getCategoryBySlug>>>;
-  software: NonNullable<Awaited<ReturnType<typeof getSoftwareBySlug>>>; lang: 'en' | 'ar'; t: T; token?: string;
+  software: NonNullable<Awaited<ReturnType<typeof getSoftwareBySlug>>>; lang: 'en' | 'ar'; t: T; token?: string; mail?: string;
 }) {
   const siblings = await listSoftware(category.id);
   const reviews = await listUserReviews(user.id, siblings.map((s) => s.id));
@@ -106,14 +122,27 @@ async function Step3({ user, category, software, lang, t, token }: {
   const MAX_TILES = 6; // A6: cap visible tiles, rest behind "See all"
   const needsZatca = ZATCA_CATEGORY_SLUGS.includes(category.slug);
 
-  // absolute confirmation link for field agents (P7)
-  let confirmUrl = '';
-  if (token && user.fieldAgent) {
-    const h = await headers();
-    const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
-    const proto = h.get('x-forwarded-proto') ?? 'https';
-    confirmUrl = `${proto}://${host}/confirm?token=${encodeURIComponent(token)}`;
+  // field agents: show the confirmation link, the WhatsApp button and the email status (P7).
+  // The respondent's contact is read from the database by token (only for the agent who collected it), never put in the URL.
+  let confirmUrl = '', waUrl = '';
+  if (token && user.fieldAgent && /^[0-9a-f]{32}$/.test(token)) {
+    const { data } = await db().from('rv_reviews').select('confirm_token,respondent:rv_respondents(name,contact)')
+      .eq('confirm_token', token).eq('collected_by', user.id).maybeSingle();
+    if (data) {
+      const h = await headers();
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') ?? h.get('x-forwarded-host') ?? h.get('host') ?? '';
+      const proto = process.env.NEXT_PUBLIC_SITE_URL?.startsWith('http://') ? 'http' : (h.get('x-forwarded-proto') ?? 'https');
+      confirmUrl = `${proto}://${host}/confirm?token=${encodeURIComponent(token)}`;
+      const r = (Array.isArray(data.respondent) ? data.respondent[0] : data.respondent) as { name: string; contact: string } | null;
+      if (r && !r.contact.includes('@')) {
+        const msg = lang === 'ar' ? `مرحبًا ${r.name}، يرجى تأكيد تقييمك لـ ${swName(software)}: ${confirmUrl}` : `Hello ${r.name}, please confirm your review of ${swName(software)}: ${confirmUrl}`;
+        waUrl = whatsappLink(r.contact, msg);
+      }
+    }
   }
+  const mailText = mail === 'sent' ? (lang === 'ar' ? 'أُرسل بريد التأكيد تلقائيًا.' : 'Confirmation email sent automatically.')
+    : mail === 'failed' ? (lang === 'ar' ? 'تعذّر إرسال البريد. أرسل الرابط يدويًا.' : 'Email could not be sent. Send the link by hand.')
+    : '';
   const opt = (list: readonly string[], key: (v: string) => string) => list.map((v) => ({ value: v, label: t[key(v) as keyof T] as string }));
 
   return (
@@ -124,12 +153,15 @@ async function Step3({ user, category, software, lang, t, token }: {
           <EntityImage url={software.image_url} name={swName(software)} size={48} />
           <div><b>{swName(software)}</b><div className="muted small">{catName(category, lang)}</div></div>
           {/* S4: renamed, keeps the chosen category */}
-          <Link href={`/review?category=${category.slug}`} className="small change">✎ {t.changeSoftware}</Link>
+          <Link href={`/product/${software.slug}`} className="small change">{lang === 'ar' ? 'صفحة المنتج' : 'Product page'}</Link>
+          <Link href={`/review?category=${category.slug}`} className="small change"><PencilIcon /> {t.changeSoftware}</Link>
         </div>
         {confirmUrl && (
           <div className="flash flash-ok">
             <b>{t.confirmLink}</b>
+            {mailText && <div className="small">{mailText}</div>}
             <div dir="ltr" className="small" style={{ wordBreak: 'break-all' }}>{confirmUrl}</div>
+            {waUrl && <a className="btn-primary" style={{ display: 'inline-block', marginTop: 8 }} href={waUrl} target="_blank" rel="noreferrer">{lang === 'ar' ? 'إرسال عبر واتساب' : 'Send on WhatsApp'}</a>}
           </div>
         )}
         <ReviewForm
@@ -155,7 +187,7 @@ async function Step3({ user, category, software, lang, t, token }: {
       <h3 className="others-title">{t.otherProducts} {catName(category, lang)}</h3>
       <div className="two-col">
         <div className="panel panel-ok">
-          <h4>✔ {t.alreadyReviewed} ({reviewed.length})</h4>
+          <h4><CheckIcon /> {t.alreadyReviewed} ({reviewed.length})</h4>
           {reviewed.slice(0, MAX_TILES).map((s) => (
             <div className="mini" key={s.id}>
               <EntityImage url={s.image_url} name={swName(s)} size={32} />
@@ -166,7 +198,7 @@ async function Step3({ user, category, software, lang, t, token }: {
           {reviewed.length > MAX_TILES && <Link className="small" href={`/review?category=${category.slug}`}>{t.seeAll} ({reviewed.length})</Link>}
         </div>
         <div className="panel panel-todo">
-          <h4>◷ {t.notYet} ({notYet.length})</h4>
+          <h4>{t.notYet} ({notYet.length})</h4>
           {notYet.slice(0, MAX_TILES).map((s) => (
             <div className="mini" key={s.id}>
               <EntityImage url={s.image_url} name={swName(s)} size={32} />

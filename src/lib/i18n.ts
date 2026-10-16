@@ -6,7 +6,7 @@ export const LANG_COOKIE = 'rv_lang';
 
 export async function getLang(): Promise<Lang> {
   const v = (await cookies()).get(LANG_COOKIE)?.value;
-  return v === 'ar' ? 'ar' : 'en';
+  return v === 'en' ? 'en' : 'ar'; // Arabic first (Nexiz design system)
 }
 
 const en = {

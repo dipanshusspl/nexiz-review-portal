@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { login } from '@/app/actions/auth';
 import Flash from '@/components/Flash';
+import Link from 'next/link';
 import { getCurrentUser, homePath } from '@/lib/auth/current-user';
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -17,6 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <label>Password<input name="password" type="password" required autoComplete="current-password" /></label>
         <button className="btn-primary wide">Sign in</button>
         <p className="muted small">Accounts are created by an administrator.</p>
+        <Link href="/products" className="btn-ghost wide" style={{ textAlign: 'center' }}>Browse products and reviews (no login)</Link>
       </form>
     </main>
   );

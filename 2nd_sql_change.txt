@@ -145,3 +145,100 @@ alter table rv_expert_software_reviews add column if not exists business_type_co
 alter table rv_expert_software_reviews add column if not exists review_type text not null default 'expert';
 alter table rv_expert_profiles add column if not exists anonymous_default boolean;           -- (kept for history; B5 is now per review)
 alter table rv_expert_software_reviews add column if not exists anonymous boolean not null default false; -- B5
+
+
+
+
+
+
+
+
+
+3 rd sql change"=
+-- Run this if you already ran 001. Fixes the two slugs that did not match your DB.
+update rv_categories set is_live = true where slug in ('pos-restaurant','ecommerce');
+update rv_categories set parent_id = (select id from rv_categories where slug = 'pos-restaurant')
+ where slug in ('restaurant-order-aggregation','restaurant-reservation-table-management');
+-- check: should return 6 live top-level rows
+select slug, is_live, parent_id from rv_categories where is_live or parent_id is not null order by slug;
+
+
+
+4th sql change-
+-- Nexiz phase 2: product page, moderation, go-live automation, form timing.
+-- Run after 001, 002, 003. Additive and safe to run twice.
+
+-- ───────── Moderation statuses (public + expert reviews) ─────────
+alter table rv_reviews add column if not exists created_at timestamptz not null default now();
+alter table rv_reviews add column if not exists status text not null default 'approved' check (status in ('pending','approved','rejected'));
+alter table rv_reviews add column if not exists escalated boolean not null default false;
+alter table rv_reviews add column if not exists escalation_reason text;
+alter table rv_reviews add column if not exists reject_reason_code text;
+alter table rv_reviews add column if not exists reviewed_by uuid references rv_users(id) on delete set null;
+alter table rv_reviews add column if not exists reviewed_at timestamptz;
+-- a field review that has not been confirmed by the respondent can never be live
+update rv_reviews set status = 'pending' where source = 'field' and verified = false;
+
+-- Expert reviews: EVERY one is read by a person first. Existing rows become 'pending'.
+alter table rv_expert_software_reviews add column if not exists created_at timestamptz not null default now();
+alter table rv_expert_software_reviews add column if not exists status text not null default 'pending' check (status in ('pending','approved','rejected'));
+alter table rv_expert_software_reviews add column if not exists escalated boolean not null default false;
+alter table rv_expert_software_reviews add column if not exists escalation_reason text;
+alter table rv_expert_software_reviews add column if not exists reject_reason_code text;
+alter table rv_expert_software_reviews add column if not exists reviewed_by uuid references rv_users(id) on delete set null;
+alter table rv_expert_software_reviews add column if not exists reviewed_at timestamptz;
+-- hash of the publishable content: the expert form re-saves rows on every autosave, so we use this to keep the
+-- approval only while the content is unchanged (edited content goes back to 'pending')
+alter table rv_expert_software_reviews add column if not exists content_sig text;
+
+create index if not exists rv_reviews_status_idx on rv_reviews (status, verified);
+create index if not exists rv_expert_reviews_status_idx on rv_expert_software_reviews (status, is_complete);
+
+-- fixed list of rejection reasons (the reviewer picks one; it is emailed to the author)
+create table if not exists rv_reject_reasons (
+  code text primary key, name_en text not null, name_ar text not null, sort_order int not null default 0
+);
+insert into rv_reject_reasons (code, name_en, name_ar, sort_order) values
+  ('too_vague',     'Too vague or off-topic to help a buyer',            'عامة أو بعيدة عن الموضوع ولا تفيد المشتري', 1),
+  ('promotional',   'Reads as promotion or an attack on a competitor',   'تبدو ترويجًا أو هجومًا على منافس', 2),
+  ('personal_data', 'Contains personal data or client names',            'تتضمن بيانات شخصية أو أسماء عملاء', 3),
+  ('abusive',       'Abusive or discriminatory language',                'تتضمن لغة مسيئة أو تمييزية', 4),
+  ('not_used',      'We could not confirm that the reviewer used it',    'تعذّر التأكد من أن المراجع استخدم المنتج', 5),
+  ('other',         'Other (see our guidelines)',                        'سبب آخر (راجع إرشاداتنا)', 6)
+on conflict (code) do nothing;
+
+-- ───────── Category go-live automation ─────────
+alter table rv_categories add column if not exists live_override boolean not null default false; -- admin: force live
+alter table rv_categories add column if not exists went_live_at timestamptz;
+update rv_categories set went_live_at = now() where is_live and went_live_at is null;
+
+-- ───────── Product page ─────────
+alter table rv_software add column if not exists vendor_name text;
+
+-- ───────── Form timing (change request, question 5) ─────────
+create table if not exists rv_form_timing (
+  id uuid primary key default gen_random_uuid(),
+  form text not null check (form in ('public','expert')),
+  user_id uuid references rv_users(id) on delete set null,
+  software_id uuid references rv_software(id) on delete set null,
+  total_ms int not null,
+  field_ms jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- Read the results after ~10 expert reviews:
+--   select form, count(*), percentile_cont(0.5) within group (order by total_ms)/1000 as median_seconds from rv_form_timing group by form;
+--   select form, k as field, round(avg(v::numeric)/1000,1) as avg_seconds
+--     from rv_form_timing, jsonb_each_text(field_ms) as t(k,v) group by form, k order by avg_seconds desc limit 15;
+
+-- ───────── 003 view: only approved reviews ─────────
+create or replace view rv_all_reviews as
+select 'user'::text as review_type, r.software_id, r.rating_overall, r.rating_ease, r.rating_support, r.rating_value,
+       r.usage_duration, r.anonymous, r.verified
+  from rv_reviews r where r.verified = true and r.status = 'approved'
+union all
+select 'expert'::text, e.software_id, e.overall_rating, e.ease_rating, e.support_rating, e.value_rating,
+       e.usage_duration_code, e.anonymous, true
+  from rv_expert_software_reviews e
+  join rv_expert_profiles p on p.id = e.profile_id and p.status = 'submitted'
+ where e.is_complete = true and e.status = 'approved' and e.software_id is not null;

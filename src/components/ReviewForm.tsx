@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { submitReview } from '@/app/actions/review';
+import { ClockIcon, MicIcon } from './Icons';
 
 type Opt = { value: string; label: string };
 type Initial = {
@@ -20,9 +21,9 @@ type Props = {
 type SR = { start(): void; stop(): void; lang: string; interimResults: boolean; continuous: boolean; onresult: ((e: any) => void) | null; onend: (() => void) | null };
 
 /** one row of pills; clicking the selected pill again clears it when `clearable` */
-function Pills({ options, value, onChange, clearable = false }: { options: Opt[]; value: string; onChange: (v: string) => void; clearable?: boolean }) {
+function Pills({ options, value, onChange, clearable = false, f }: { options: Opt[]; value: string; onChange: (v: string) => void; clearable?: boolean; f?: string }) {
   return (
-    <div className="pills">
+    <div className="pills" data-f={f}>
       {options.map((o) => (
         <button type="button" key={o.value} className={value === o.value ? 'pill on' : 'pill'} aria-pressed={value === o.value}
           onClick={() => onChange(clearable && value === o.value ? '' : o.value)}>{o.label}</button>
@@ -51,6 +52,21 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
   const [listening, setListening] = useState<'pros' | 'cons' | null>(null);
   const [canSpeak, setCanSpeak] = useState(false);
   const rec = useRef<SR | null>(null);
+  // form timing (client answer 5): total time + time spent in each question, sent with the review
+  const t0 = useRef<number>(Date.now());
+  const focusAt = useRef<{ f: string; at: number } | null>(null);
+  const fieldMs = useRef<Record<string, number>>({});
+  const timingRef = useRef<HTMLInputElement>(null);
+  const fieldOf = (el: EventTarget | null): string => {
+    const e = el as HTMLElement | null;
+    const raw = e?.closest?.('[data-f]')?.getAttribute('data-f') || e?.getAttribute?.('name') || '';
+    return raw.replace(/[^a-z_]/g, '').slice(0, 40);
+  };
+  const stopField = () => {
+    const cur = focusAt.current;
+    if (cur && cur.f) fieldMs.current[cur.f] = (fieldMs.current[cur.f] ?? 0) + (Date.now() - cur.at);
+    focusAt.current = null;
+  };
 
   useEffect(() => {
     const w = window as any;
@@ -89,7 +105,7 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
         onChange={(e) => set(e.target.value)} placeholder={`${t.sharePlaceholder} ${softwareName}...`} />
       <div className="review-foot">
         {canSpeak ? (
-          <button type="button" className={listening === id ? 'mic on' : 'mic'} onClick={() => toggleMic(id)}>🎤 {listening === id ? t.stop : t.record}</button>
+          <button type="button" className={listening === id ? 'mic on' : 'mic'} onClick={() => toggleMic(id)}><MicIcon /> {listening === id ? t.stop : t.record}</button>
         ) : <span />}
         <span className={val.trim().length < 20 ? 'count low' : 'count'}>{val.length}/200 · {t.min20}</span>
       </div>
@@ -97,7 +113,11 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
   );
 
   return (
-    <form action={submitReview} className="review-form">
+    <form action={submitReview} className="review-form"
+      onFocusCapture={(e) => { stopField(); focusAt.current = { f: fieldOf(e.target), at: Date.now() }; }}
+      onBlurCapture={stopField}
+      onSubmit={() => { stopField(); if (timingRef.current) timingRef.current.value = JSON.stringify({ total_ms: Date.now() - t0.current, fields: fieldMs.current }); }}>
+      <input type="hidden" name="timing" ref={timingRef} defaultValue="" />
       <input type="hidden" name="category" value={category} />
       <input type="hidden" name="software" value={software} />
       <input type="hidden" name="rating" value={rating || ''} />
@@ -112,7 +132,7 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
       <input type="hidden" name="rating_support" value={support} />
       <input type="hidden" name="rating_value" value={value} />
 
-      <p className="muted small takes">⏱ {t.takes60}</p>
+      <p className="muted small takes"><ClockIcon /> {t.takes60}</p>
       {isUpdate && <p className="muted small">{t.youReviewed}</p>}
 
       {/* P7 — field agents only */}
@@ -134,9 +154,9 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
       {/* P3 — who is reviewing (above the rating) */}
       <h4>{t.whoReviewing}</h4>
       <p className="muted small">{t.yourRole} *</p>
-      <Pills options={roles} value={role} onChange={setRole} />
+      <Pills f="reviewer_role" options={roles} value={role} onChange={setRole} />
       <p className="muted small gap">{t.companySize} *</p>
-      <Pills options={sizes} value={size} onChange={setSize} />
+      <Pills f="company_size" options={sizes} value={size} onChange={setSize} />
 
       {/* rating + P2 recommend + P6 sub-ratings */}
       <h4>{t.yourRating} *</h4>
@@ -149,7 +169,7 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
       </div>
 
       <h4>{t.recommendQ} *</h4>
-      <Pills options={yn} value={recommend} onChange={setRecommend} />
+      <Pills f="would_recommend" options={yn} value={recommend} onChange={setRecommend} />
 
       <details className="subratings">
         <summary>{t.subRatings}</summary>
@@ -160,14 +180,14 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
 
       {/* A1 — shared duration list */}
       <h4>{t.howLong} *</h4>
-      <Pills options={durations} value={duration} onChange={setDuration} />
+      <Pills f="duration" options={durations} value={duration} onChange={setDuration} />
 
       {/* P4 — ZATCA, only in the 4 relevant categories */}
-      {needsZatca && (<><h4>{t.zatcaQ} *</h4><Pills options={zatcaOptions} value={zatca} onChange={setZatca} /></>)}
+      {needsZatca && (<><h4>{t.zatcaQ} *</h4><Pills f="zatca_status" options={zatcaOptions} value={zatca} onChange={setZatca} /></>)}
 
       {/* P5 — churn */}
       <h4>{t.stillUsing} *</h4>
-      <Pills options={yn} value={stillUsing} onChange={setStillUsing} />
+      <Pills f="still_using" options={yn} value={stillUsing} onChange={setStillUsing} />
       {stillUsing === 'no' && (
         <label className="moved">{t.movedTo}
           <select value={movedTo} onChange={(e) => setMovedTo(e.target.value)}>

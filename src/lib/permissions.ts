@@ -5,6 +5,7 @@ export const PERMISSIONS = [
   { key: 'users.manage', label: 'Create / edit / delete users' },
   { key: 'roles.manage', label: 'Create / edit / delete roles' },
   { key: 'reviews.write', label: 'Write reviews' },
+  { key: 'reviews.moderate', label: 'Approve / reject reviews (moderation screen)' },
   { key: 'expert.panel', label: 'Use the Expert panel (professional portfolio screen)' },
 ] as const;
 

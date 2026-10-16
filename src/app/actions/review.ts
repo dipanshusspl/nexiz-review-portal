@@ -7,6 +7,10 @@ import { COMPANY_SIZES, DURATIONS, ROLES, ZATCA } from '@/lib/i18n';
 import { ZATCA_CATEGORY_SLUGS, categoryScopeIds } from '@/lib/data';
 import { redirect } from 'next/navigation';
 import { isEmail, str } from '@/lib/form';
+import { extremeRatings, submittedTooFast } from '@/lib/review-rules';
+import { confirmationEmail } from '@/lib/notify/templates';
+import { notify, siteUrl } from '@/lib/notify';
+import { swName } from '@/lib/data';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const inList = (list: readonly string[], v: string) => list.includes(v);
@@ -64,6 +68,9 @@ export async function submitReview(fd: FormData) {
     movedId = m?.id ?? null;
   }
 
+  // ---- moderation rules (client answer 3): users publish automatically unless one of these fires ----
+  const extreme = extremeRatings([rating, subs.rating_ease, subs.rating_support, subs.rating_value]);
+
   const row: Record<string, unknown> = {
     software_id: sw.id,
     review_type: 'user',
@@ -102,22 +109,52 @@ export async function submitReview(fd: FormData) {
     if (dup) redirect(`${base}&error=duplicate`);
 
     const token = randomUUID().replace(/-/g, '');
-    const { error } = await db().from('rv_reviews').insert({
-      ...row, user_id: me.id, source: 'field', verified: false,
+    // field reviews stay 'pending' + unverified until the respondent confirms; /confirm then publishes them
+    const { data: created, error } = await db().from('rv_reviews').insert({
+      ...row, user_id: me.id, source: 'field', verified: false, status: 'pending',
+      escalated: extreme, escalation_reason: extreme ? 'all_ratings_extreme' : null,
       collected_by: me.id, respondent_id: resp.id, confirm_token: token,
-    });
-    if (error) redirect(`${base}&error=failed`);
-    redirect(`${base}&ok=savedField&token=${token}`);
+    }).select('id').single();
+    if (error || !created) redirect(`${base}&error=failed`);
+    await saveTiming(fd, me.id, sw.id);
+
+    // automatic channel: email (when the respondent gave an email). WhatsApp is sent by the agent from the page.
+    let mail = 'skipped';
+    if (isEmail(contact)) {
+      const { data: swRow } = await db().from('rv_software').select('name,display_name').eq('id', sw.id).single();
+      const url = `${await siteUrl()}/confirm?token=${token}`;
+      const r = await notify(confirmationEmail(contact, rName, swRow ? swName(swRow) : software, url));
+      mail = r.ok ? 'sent' : 'failed';
+    }
+    redirect(`${base}&ok=savedField&token=${token}&mail=${mail}`);
   }
 
   // ---- normal web review: one per account per product (A6) ----
-  const { data: mine } = await db().from('rv_reviews').select('id')
+  const { data: mine } = await db().from('rv_reviews').select('id,status')
     .eq('software_id', sw.id).eq('user_id', me.id).eq('source', 'web').maybeSingle();
+  const burst = mine ? false : await submittedTooFast(me.id);
+  const reason = extreme ? 'all_ratings_extreme' : burst ? 'burst' : null;
+  // a previously rejected review that is edited goes back to a person, never straight to live
+  const status = mine?.status === 'rejected' || reason ? 'pending' : 'approved';
+  const moderation = { status, escalated: !!reason, escalation_reason: reason, reject_reason_code: null, reviewed_by: null, reviewed_at: null };
   const { error } = mine
-    ? await db().from('rv_reviews').update(row).eq('id', mine.id)
-    : await db().from('rv_reviews').insert({ ...row, user_id: me.id, source: 'web', verified: true });
+    ? await db().from('rv_reviews').update({ ...row, ...moderation }).eq('id', mine.id)
+    : await db().from('rv_reviews').insert({ ...row, ...moderation, user_id: me.id, source: 'web', verified: true });
   if (error) redirect(`${base}&error=failed`);
+  await saveTiming(fd, me.id, sw.id);
   redirect(`${base}&ok=saved`);
+}
+
+/** Form timing (client answer 5): the browser sends {total_ms, fields:{name:ms}} in a hidden field. Best effort, never blocks a review. */
+async function saveTiming(fd: FormData, userId: string, softwareId: string) {
+  try {
+    const t = JSON.parse(String(fd.get('timing') ?? '{}')) as { total_ms?: number; fields?: Record<string, number> };
+    const total = Math.round(Number(t.total_ms));
+    if (!Number.isFinite(total) || total <= 0 || total > 4 * 3600_000) return;
+    const fields: Record<string, number> = {};
+    for (const [k, v] of Object.entries(t.fields ?? {}).slice(0, 40)) if (/^[a-z_]{1,40}$/.test(k) && Number.isFinite(Number(v))) fields[k] = Math.round(Number(v));
+    await db().from('rv_form_timing').insert({ form: 'public', user_id: userId, software_id: softwareId, total_ms: total, field_ms: fields });
+  } catch { /* ignore */ }
 }
 
 /** Part 1: "Can't find your category? Tell us." — captures demand for the next categories. */

@@ -125,7 +125,7 @@ export async function saveCategory(fd: FormData) {
   const row: Record<string, unknown> = {
     name_en: nameEn, name_ar: optional(fd, 'name_ar', 100),
     slug: slugify(str(fd, 'slug', 80) || nameEn), sort_order: Number(fd.get('sort_order')) || 0,
-    is_live: fd.get('is_live') === 'on', parent_id: optional(fd, 'parent_id', 60),
+    is_live: fd.get('is_live') === 'on', live_override: fd.get('live_override') === 'on', parent_id: optional(fd, 'parent_id', 60),
     updated_at: new Date().toISOString(),
   };
   if (can(me, 'images.manage')) {
