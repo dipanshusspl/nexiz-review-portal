@@ -64,12 +64,12 @@ type T = ReturnType<typeof getDict>;
 async function Step1({ lang, t }: { lang: 'en' | 'ar'; t: T }) {
   const cats = await listCategories();
   const stats = await categoryStats();
-  const tiles: Tile[] = cats.map((c) => {
+  const tiles: Tile[] = cats.filter((c) => (stats.get(c.id)?.products ?? 0) > 0).map((c) => {
     const s = stats.get(c.id) ?? { products: 0, reviews: 0 };
     // a live category that is still thin says so (client answer 4), it is never hidden again
     const thin = s.products < GO_LIVE_MIN_PRODUCTS || s.reviews < GO_LIVE_MIN_REVIEWS;
     return {
-      id: c.id, href: `/review?category=${c.slug}`, name: catName(c, lang), imageUrl: c.image_url, hue: hueOf(c.name_en),
+      id: c.id, href: `/review?category=${c.slug}`, name: catName(c, lang), imageUrl: c.image_url, hue: hueOf(c.name_en), icon: c.slug,
       meta: lang === 'ar' ? `${s.products} منتجات · ${s.reviews} تقييمات` : `${s.products} products · ${s.reviews} reviews`,
       note: thin ? (lang === 'ar' ? `${s.reviews} تقييمات فقط حتى الآن` : `Only ${s.reviews} reviews so far`) : undefined,
     };

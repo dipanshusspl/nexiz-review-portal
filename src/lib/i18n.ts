@@ -57,7 +57,7 @@ const en = {
 };
 
 const ar: typeof en = {
-  appName: 'نكسز AI', logout: 'تسجيل الخروج', adminPanel: 'لوحة الإدارة', reviewPage: 'تقييم البرامج',
+  appName: 'Nexiz AI', logout: 'تسجيل الخروج', adminPanel: 'لوحة الإدارة', reviewPage: 'تقييم البرامج',
   changePassword: 'تغيير كلمة المرور',
   step1: 'اختيار التصنيف', step2: 'اختيار البرنامج', step3: 'كتابة التقييم',
   s1Title: 'أي تصنيف تود تقييمه؟', s1Sub: 'اختر تصنيفاً لعرض البرامج المتاحة',

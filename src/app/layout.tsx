@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Suspense } from 'react';
+import LoadingBar from '@/components/LoadingBar';
 import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { getLang } from '@/lib/i18n';
 
@@ -12,7 +14,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = await getLang();
   return (
     <html lang={lang} dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`${plexAr.variable} ${plexMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Suspense fallback={null}><LoadingBar /></Suspense>
+        {children}
+      </body>
     </html>
   );
 }

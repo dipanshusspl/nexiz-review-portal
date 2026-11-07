@@ -142,7 +142,8 @@ export async function submitReview(fd: FormData) {
     : await db().from('rv_reviews').insert({ ...row, ...moderation, user_id: me.id, source: 'web', verified: true });
   if (error) redirect(`${base}&error=failed`);
   await saveTiming(fd, me.id, sw.id);
-  redirect(`${base}&ok=saved`);
+  // a public reviewer goes back to the list of software in this category, with the success message
+  redirect(`/review?category=${encodeURIComponent(category)}&ok=saved`);
 }
 
 /** Form timing (client answer 5): the browser sends {total_ms, fields:{name:ms}} in a hidden field. Best effort, never blocks a review. */
