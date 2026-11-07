@@ -23,7 +23,16 @@ export default async function ProductsPage() {
       <TrustBar lang={lang} />
       <main className="prod">
         <h1 className="title">{ar ? 'المنتجات' : 'Products'}</h1>
-        <p className="muted">{ar ? 'اختر منتجًا لقراءة تقييمات المستخدمين والخبراء.' : 'Pick a product to read user and expert reviews.'}</p>
+                <p className="muted">{ar ? 'اختر منتجًا لقراءة تقييمات المستخدمين والخبراء.' : 'Pick a product to read user and expert reviews.'}</p>
+        {!user && (
+          <a
+            href="/review"
+            className="btn-primary"
+            style={{ display: 'inline-block', textDecoration: 'none', margin: '8px 0 16px' }}
+          >
+            {ar ? 'إعطاء ملاحظات' : 'Give Review'}
+          </a>
+        )}
         {groups.filter((g) => g.items.length).map(({ c, items }) => (
           <section key={c.id} className="blk">
             <h2>{catName(c, lang)}</h2>

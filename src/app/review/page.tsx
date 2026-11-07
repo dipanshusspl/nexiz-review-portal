@@ -3,10 +3,10 @@ import { redirect } from 'next/navigation';
 import EntityImage from '@/components/EntityImage';
 import Flash from '@/components/Flash';
 import Header from '@/components/Header';
+import PublicHeader from '@/components/PublicHeader';
 import ReviewForm from '@/components/ReviewForm';
 import Stepper from '@/components/Stepper';
 import TileGrid, { type Tile } from '@/components/TileGrid';
-// import { requireUser } from '@/lib/auth/current-user';
 import { ZATCA_CATEGORY_SLUGS, catName, categoryScopeIds, getCategoryBySlug, getSoftwareBySlug, listCategories, listSoftware, listUserReviews, swName } from '@/lib/data';
 import { submitCategoryRequest } from '@/app/actions/review';
 import { COMPANY_SIZES, DURATIONS, ROLES, ZATCA, getDict, getLang } from '@/lib/i18n';
@@ -17,14 +17,15 @@ import { CheckIcon, PencilIcon } from '@/components/Icons';
 import { categoryStats, GO_LIVE_MIN_PRODUCTS, GO_LIVE_MIN_REVIEWS } from '@/lib/stats';
 import { db } from '@/lib/supabase/admin';
 import { whatsappLink } from '@/lib/notify';
-import { isExpertPanelUser, requireUser } from '@/lib/auth/current-user';
+import { getCurrentUser, isExpertPanelUser, type CurrentUser } from '@/lib/auth/current-user';
 
 const hueOf = (s: string) => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  const user = await requireUser();
-  if (isExpertPanelUser(user)) redirect('/expert');
+  // open to everyone: user is null when not logged in
+  const user = await getCurrentUser();
+  if (user && isExpertPanelUser(user)) redirect('/expert');
   const lang = await getLang();
   const t = getDict(lang);
   const sp = await searchParams;
@@ -44,7 +45,9 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <Header user={user} lang={lang} t={t} current={current} />
+      {user
+        ? <Header user={user} lang={lang} t={t} current={current} />
+        : <PublicHeader lang={lang} current={current} loggedIn={false} t={lang === 'ar' ? { login: 'تسجيل الدخول', reviewIt: 'قيّم برنامجًا' } : { login: 'Log in', reviewIt: 'Review software' }} />}
       <TrustBar lang={lang} />
       <main className="page">
         <Stepper step={step} labels={labels} />
@@ -108,11 +111,11 @@ async function Step2({ category, lang, t }: { category: Awaited<ReturnType<typeo
 }
 
 async function Step3({ user, category, software, lang, t, token, mail }: {
-  user: Awaited<ReturnType<typeof requireUser>>; category: NonNullable<Awaited<ReturnType<typeof getCategoryBySlug>>>;
+  user: CurrentUser | null; category: NonNullable<Awaited<ReturnType<typeof getCategoryBySlug>>>;
   software: NonNullable<Awaited<ReturnType<typeof getSoftwareBySlug>>>; lang: 'en' | 'ar'; t: T; token?: string; mail?: string;
 }) {
   const siblings = await listSoftware(category.id);
-  const reviews = await listUserReviews(user.id, siblings.map((s) => s.id));
+  const reviews = user ? await listUserReviews(user.id, siblings.map((s) => s.id)) : [];
   const mine = reviews.find((r) => r.software_id === software.id) ?? null;
   const others = siblings.filter((s) => s.id !== software.id);
   const byId = new Map(reviews.map((r) => [r.software_id, r]));
@@ -125,7 +128,7 @@ async function Step3({ user, category, software, lang, t, token, mail }: {
   // field agents: show the confirmation link, the WhatsApp button and the email status (P7).
   // The respondent's contact is read from the database by token (only for the agent who collected it), never put in the URL.
   let confirmUrl = '', waUrl = '';
-  if (token && user.fieldAgent && /^[0-9a-f]{32}$/.test(token)) {
+  if (token && user?.fieldAgent && /^[0-9a-f]{32}$/.test(token)) {
     const { data } = await db().from('rv_reviews').select('confirm_token,respondent:rv_respondents(name,contact)')
       .eq('confirm_token', token).eq('collected_by', user.id).maybeSingle();
     if (data) {
@@ -167,7 +170,7 @@ async function Step3({ user, category, software, lang, t, token, mail }: {
         <ReviewForm
           key={software.id}
           category={category.slug} software={software.slug} softwareName={swName(software)} lang={lang}
-          isUpdate={!!mine} needsZatca={needsZatca} fieldAgent={user.fieldAgent} agentName={user.fullName}
+          isUpdate={!!mine} needsZatca={needsZatca} fieldAgent={user?.fieldAgent ?? false} agentName={user?.fullName ?? ''}
           initial={mine ? {
             rating: mine.rating_overall, duration: mine.usage_duration, pros: mine.pros ?? '', cons: mine.cons ?? '',
             recommend: mine.would_recommend == null ? '' : mine.would_recommend ? 'yes' : 'no',
