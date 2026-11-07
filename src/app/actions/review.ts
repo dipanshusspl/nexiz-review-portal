@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { db } from '@/lib/supabase/admin';
-import { can, requireUser } from '@/lib/auth/current-user';
+import { can, getCurrentUser, type CurrentUser } from '@/lib/auth/current-user';
 import { COMPANY_SIZES, DURATIONS, ROLES, ZATCA } from '@/lib/i18n';
 import { ZATCA_CATEGORY_SLUGS, categoryScopeIds } from '@/lib/data';
 import { redirect } from 'next/navigation';
@@ -20,12 +20,39 @@ const rating15 = (v: FormDataEntryValue | null): number | null => {
 };
 const isMobile = (s: string) => /^\+?[0-9\s-]{8,16}$/.test(s);
 
+/**
+ * Visitors who are not logged in may review without an account. Their reviews are stored under one
+ * disabled placeholder account (it can never log in) and always wait in the moderation queue.
+ * The placeholder is created automatically the first time it is needed.
+ */
+const GUEST_EMAIL = 'guest-reviewer@nexiz.local';
+async function guestReviewer(): Promise<CurrentUser> {
+  let { data } = await db().from('rv_users').select('id').eq('email', GUEST_EMAIL).maybeSingle();
+  if (!data) {
+    const { data: role } = await db().from('rv_roles').select('id').eq('name', 'expert').maybeSingle();
+    if (!role) redirect('/review?error=failed');
+    const ins = await db().from('rv_users').insert({
+      email: GUEST_EMAIL, full_name: 'Guest reviewer', role_id: role.id,
+      password_hash: 'disabled', is_active: false, field_agent: false,
+    }).select('id').single();
+    if (ins.error || !ins.data) {
+      // a parallel request may have created it a moment ago
+      const again = await db().from('rv_users').select('id').eq('email', GUEST_EMAIL).maybeSingle();
+      if (!again.data) redirect('/review?error=failed');
+      data = again.data;
+    } else data = ins.data;
+  }
+  return { id: data!.id, email: '', fullName: 'Guest reviewer', roleId: '', roleName: 'guest', permissions: [], fieldAgent: false };
+}
+
 export async function submitReview(fd: FormData) {
-  const me = await requireUser();
+  const user = await getCurrentUser();
+  const guest = !user;
+  const me: CurrentUser = user ?? (await guestReviewer());
   const category = str(fd, 'category', 100);
   const software = str(fd, 'software', 100);
   const base = `/review?category=${encodeURIComponent(category)}&software=${encodeURIComponent(software)}`;
-  if (!can(me, 'reviews.write')) redirect('/review?error=forbidden');
+  if (user && !can(user, 'reviews.write')) redirect('/review?error=forbidden');
 
   // ---- core fields (P1, P2, P3, P5, A1, A2) ----
   const rating = rating15(fd.get('rating'));
@@ -130,12 +157,15 @@ export async function submitReview(fd: FormData) {
   }
 
   // ---- normal web review: one per account per product (A6) ----
-  const { data: mine } = await db().from('rv_reviews').select('id,status')
-    .eq('software_id', sw.id).eq('user_id', me.id).eq('source', 'web').maybeSingle();
-  const burst = mine ? false : await submittedTooFast(me.id);
+  // guests have no account, so they never edit an old review: every guest review is a new row
+  const { data: mine } = guest
+    ? { data: null }
+    : await db().from('rv_reviews').select('id,status')
+        .eq('software_id', sw.id).eq('user_id', me.id).eq('source', 'web').maybeSingle();
+  const burst = mine || guest ? false : await submittedTooFast(me.id);
   const reason = extreme ? 'all_ratings_extreme' : burst ? 'burst' : null;
-  // a previously rejected review that is edited goes back to a person, never straight to live
-  const status = mine?.status === 'rejected' || reason ? 'pending' : 'approved';
+  // guest reviews always wait for a moderator; a rejected review that is edited goes back to a person too
+  const status = guest || mine?.status === 'rejected' || reason ? 'pending' : 'approved';
   const moderation = { status, escalated: !!reason, escalation_reason: reason, reject_reason_code: null, reviewed_by: null, reviewed_at: null };
   const { error } = mine
     ? await db().from('rv_reviews').update({ ...row, ...moderation }).eq('id', mine.id)
@@ -160,7 +190,7 @@ async function saveTiming(fd: FormData, userId: string, softwareId: string) {
 
 /** Part 1: "Can't find your category? Tell us." — captures demand for the next categories. */
 export async function submitCategoryRequest(fd: FormData) {
-  const me = await requireUser();
+  const me = (await getCurrentUser()) ?? (await guestReviewer());
   const text = str(fd, 'text', 300);
   if (text.length >= 2) await db().from('rv_category_requests').insert({ user_id: me.id, text });
   redirect('/review?ok=requested');

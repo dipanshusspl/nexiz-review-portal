@@ -43,4 +43,4 @@ export async function trustFigures(): Promise<{ products: number; verified: numb
 }
 
 export const GO_LIVE_MIN_PRODUCTS = 5;
-export const GO_LIVE_MIN_REVIEWS = 3;
+export const GO_LIVE_MIN_REVIEWS = 1;

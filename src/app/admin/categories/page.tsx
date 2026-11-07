@@ -5,6 +5,7 @@ import Flash from '@/components/Flash';
 import { deleteCategory, saveCategory, setCategoryImage } from '@/app/actions/admin';
 import { can, requireUser } from '@/lib/auth/current-user';
 import { listCategories } from '@/lib/data';
+import { GO_LIVE_MIN_PRODUCTS, GO_LIVE_MIN_REVIEWS } from '@/lib/stats';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/supabase/admin';
 
@@ -15,7 +16,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
   if (!manage && !images) redirect('/review?error=forbidden');
   const sp = await searchParams;
   const cats = await listCategories({ all: true });
-  // go-live rule: a category should be live only at 5+ products and 3+ published reviews
+  // go-live rule: a category should be live only at 5+ products and 1+ published review
   const [{ data: sw }, { data: rv }] = await Promise.all([
     db().from('rv_software').select('id,category_id'),
     db().from('rv_reviews').select('software_id').eq('verified', true),
@@ -41,7 +42,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
             <label>Sort order<input name="sort_order" type="number" defaultValue={editing?.sort_order ?? 0} /></label>
           </div>
           <label className="check"><input type="checkbox" name="is_live" defaultChecked={editing?.is_live ?? false} /> Live (shown on the public /review page). Hidden categories keep their records and routes.</label>
-          <label className="check"><input type="checkbox" name="live_override" defaultChecked={editing?.live_override} /> Force live (override the 5 products / 3 reviews rule, e.g. for a partner demo)</label>
+          <label className="check"><input type="checkbox" name="live_override" defaultChecked={editing?.live_override} /> Force live (override the 5 products / 1 review rule, e.g. for a partner demo)</label>
           <label>Sub-tag of (merge into another category)
             <select name="parent_id" defaultValue={editing?.parent_id ?? ''}>
               <option value="">— none (top-level) —</option>
@@ -69,8 +70,8 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
               <td><b>{c.name_en}</b><div className="muted small" dir="rtl">{c.name_ar}</div></td>
               <td className="small">{c.slug}{c.parent_id && <div className="muted">sub-tag of {parentName.get(c.parent_id)}</div>}</td>
               <td>{c.is_live ? '✔' : '—'}</td>
-              <td className={(nProducts.get(c.id) ?? 0) >= 5 ? '' : 'muted'}>{nProducts.get(c.id) ?? 0}/5</td>
-              <td className={(nReviews.get(c.id) ?? 0) >= 3 ? '' : 'muted'}>{nReviews.get(c.id) ?? 0}/3</td>
+              <td className={(nProducts.get(c.id) ?? 0) >= GO_LIVE_MIN_PRODUCTS ? '' : 'muted'}>{nProducts.get(c.id) ?? 0}/{GO_LIVE_MIN_PRODUCTS}</td>
+              <td className={(nReviews.get(c.id) ?? 0) >= GO_LIVE_MIN_REVIEWS ? '' : 'muted'}>{nReviews.get(c.id) ?? 0}/{GO_LIVE_MIN_REVIEWS}</td>
               <td>{c.sort_order}</td>
               <td className="actions">
                 {!manage && images && (
