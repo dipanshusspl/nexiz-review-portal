@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <label>{t.password}<input name="password" type="password" required autoComplete="current-password" dir="ltr" /></label>
         <button className="btn-primary wide">{t.signIn}</button>
         <Link href="/register" className="btn-ghost wide" style={{ textAlign: 'center' }}>{t.registerBtn}</Link>
-        <Link href="/products" className="btn-ghost wide" style={{ textAlign: 'center' }}>{t.browse}</Link>
+        {/* <Link href="/products" className="btn-ghost wide" style={{ textAlign: 'center' }}>{t.browse}</Link> */}
       </form>
       </div>
     </main>
