@@ -9,6 +9,7 @@ import { SESSION_COOKIE, SESSION_HOURS, signSession } from '@/lib/auth/session';
 import { LANG_COOKIE } from '@/lib/i18n';
 import { back, str } from '@/lib/form';
 import { canOpenAdmin, getCurrentUser, homePath, requireUser } from '@/lib/auth/current-user';
+import { safeNext } from '@/lib/auth/oauth';
 
 
 const MAX_FAILS = 5;
@@ -17,14 +18,16 @@ const LOCK_MINUTES = 15;
 export async function login(fd: FormData) {
   const email = str(fd, 'email', 254).toLowerCase();
   const password = String(fd.get('password') ?? '').slice(0, 200);
-  const fail = () => back('/login', 'error', 'Invalid email or password.');
+  const next = safeNext(String(fd.get('next') ?? ''));
+  const loginPath = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
+  const fail = () => back(loginPath, 'error', 'Invalid email or password.');
 
   const { data: u } = await db().from('rv_users')
     .select('id,password_hash,is_active,failed_attempts,locked_until').eq('email', email).maybeSingle();
 
   if (!u) { await verifyPassword(password, DUMMY_HASH); return fail(); }
   if (u.locked_until && new Date(u.locked_until) > new Date()) {
-    return back('/login', 'error', 'Too many failed attempts. Try again in a few minutes.');
+    return back(loginPath, 'error', 'Too many failed attempts. Try again in a few minutes.');
   }
   const ok = await verifyPassword(password, u.password_hash);
   if (!ok || !u.is_active) {
@@ -45,7 +48,7 @@ export async function login(fd: FormData) {
   });
   const me = await getCurrentUser();
   // Admin-type users land on the admin dashboard (create roles/users...). Everyone else on the review screen.
-  redirect(canOpenAdmin(me) && me?.roleName === 'admin' ? '/admin' : homePath(me));
+  redirect(next || (canOpenAdmin(me) && me?.roleName === 'admin' ? '/admin' : homePath(me)));
 }
 
 export async function logout() {

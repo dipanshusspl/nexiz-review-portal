@@ -1,9 +1,4 @@
-/**
- * The Expert panel screen supplied by the client (Nexiz_Expert_Portfolio_AR_EN.html), embedded as a string.
- * Served by src/app/expert/frame/route.ts only to users with the 'expert.panel' permission.
- * The screen is data-driven: frame/route.ts fills __CATALOG_JSON__ (dropdowns, categories, software) and __INITIAL_STATE_JSON__ (the saved profile); saving goes to /expert/api.
- * To update the design later: paste the new HTML between the backticks (escape every ` as \` , every \ as \\ and every ${ as \${).
- */
+
 export const EXPERT_PORTFOLIO_HTML = `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -537,4 +532,5 @@ renderPicker();updateReviews();consultantVisibility();updatePortfolio();applyLan
 </script>
 </body>
 </html>
+>>>>>>> bf77a77 (Update project changes)
 `;

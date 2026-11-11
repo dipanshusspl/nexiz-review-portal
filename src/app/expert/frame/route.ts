@@ -1,6 +1,7 @@
 import { can, getCurrentUser } from '@/lib/auth/current-user';
-import { EXPERT_PORTFOLIO_HTML } from '@/lib/expert-portfolio-html';
-import { loadCatalog, loadExpertState } from '@/lib/expert';
+import { EXPERT_WIZARD_HTML } from '@/lib/expert-wizard-html';
+import { loadMyReviews, loadProfileState, loadReviewCatalog } from '@/lib/expert-v2';
+import { providerConfigured } from '@/lib/auth/oauth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,49 +9,39 @@ export const dynamic = 'force-dynamic';
 const safeJson = (v: unknown) =>
   JSON.stringify(v).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
-/** The client's Expert portfolio screen, filled with live data from the database. Only 'expert.panel' users (and admins) get it. */
-export async function GET() {
+/**
+ * The Expert screen. Anyone can open it and answer step 1 (kept on their device); everything else needs a signed-in expert.
+ *   /expert/frame                -> review journey
+ *   /expert/frame?view=profile   -> professional profile (signed-in only)
+ *   /expert/frame?signin=failed  -> shows "sign-in didn't complete", answers stay
+ */
+export async function GET(req: Request) {
   const user = await getCurrentUser();
-  if (!user || !can(user, 'expert.panel')) return new Response('Forbidden', { status: 403 });
+  if (user && !can(user, 'expert.panel')) return new Response('Forbidden', { status: 403 });
+  const url = new URL(req.url);
+  const view = url.searchParams.get('view') === 'profile' && user ? 'profile' : 'review';
 
   let catalogJson: string, stateJson: string;
   try {
-    const [catalog, state] = await Promise.all([loadCatalog(), loadExpertState(user)]);
+    const [catalog, reviews, profile] = await Promise.all([
+      loadReviewCatalog(), user ? loadMyReviews(user) : Promise.resolve([]), user ? loadProfileState(user) : Promise.resolve(null),
+    ]);
     catalogJson = safeJson(catalog);
-    stateJson = safeJson(state);
+    stateJson = safeJson({
+      signedIn: !!user, view, signinFailed: url.searchParams.get('signin') === 'failed',
+      user: user ? { name: user.fullName, email: user.email } : null,
+      providers: { google: providerConfigured('google'), linkedin: providerConfigured('linkedin') },
+      reviews, profile: profile?.profile ?? null, avatar: profile?.avatar ?? '', avatar_from_provider: profile?.avatar_from_provider ?? false,
+      specialties: profile?.specialties ?? [], services: profile?.services ?? [], certificates: profile?.certificates ?? [], projects: profile?.projects ?? [],
+    });
   } catch (e) {
     console.error('expert frame load failed', e);
     return new Response('Could not load the expert screen. Please try again.', { status: 500 });
   }
 
   // ONE pass over the HTML, so text inside the data can never be mistaken for a placeholder.
-  const html = EXPERT_PORTFOLIO_HTML.replace(/__(CATALOG|INITIAL_STATE)_JSON__/g, (_m, k: string) =>
-    k === 'CATALOG' ? catalogJson : stateJson);
-
+  const html = EXPERT_WIZARD_HTML.replace(/__(CATALOG|STATE)_JSON__/g, (_m, k: string) => (k === 'CATALOG' ? catalogJson : stateJson));
   return new Response(html, {
-    headers: {
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'private, no-store',
-      'x-frame-options': 'SAMEORIGIN',
-    },
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store', 'x-frame-options': 'SAMEORIGIN' },
   });
 }
-
-// import { can, getCurrentUser } from '@/lib/auth/current-user';
-// import { EXPERT_PORTFOLIO_HTML } from '@/lib/expert-portfolio-html';
-
-// export const dynamic = 'force-dynamic';
-
-// /** The client's Expert portfolio screen. Only users with the 'expert.panel' permission (and admins) get it. */
-// export async function GET() {
-//   const user = await getCurrentUser();
-//   if (!user || !can(user, 'expert.panel')) return new Response('Forbidden', { status: 403 });
-//   const html = EXPERT_PORTFOLIO_HTML.replace('__USER_KEY__', user.id.replace(/[^a-zA-Z0-9-]/g, ''));
-//   return new Response(html, {
-//     headers: {
-//       'content-type': 'text/html; charset=utf-8',
-//       'cache-control': 'private, no-store',
-//       'x-frame-options': 'SAMEORIGIN',
-//     },
-//   });
-// }

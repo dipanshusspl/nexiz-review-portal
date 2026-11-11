@@ -77,14 +77,14 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
   const yesStill = new Set(((lkRows ?? []) as Row[]).filter((o) => o.group_code === 'still_using' && (/^yes$/i.test(o.name_en ?? '') || o.name_ar === 'نعم')).map((o) => o.code));
   for (const r of (expRes.data ?? []) as Row[]) {
     const p = profMap.get(r.profile_id);
-    if (!p || p.status !== 'submitted') continue; // an expert profile must itself be submitted
+    // review status and profile completion are independent: an approved review is public even if the profile is empty
     const comp: Record<string, Status> = {};
     for (const [k, v] of Object.entries((r.compliance ?? {}) as Record<string, string>)) if (EXP_COMP[v]) comp[k] = EXP_COMP[v];
     const moved = typeof r.moved_to_software === 'string' && swName.has(r.moved_to_software) ? r.moved_to_software : null;
     items.push({
       id: 'e' + r.id, kind: 'expert', date: r.created_at ?? r.updated_at ?? '', score: r.overall_rating,
       recommend: r.recommended_code ? yes.has(r.recommended_code) : null,
-      role: (p.professional_role_code && roleLabel.get(p.professional_role_code)) || p.professional_role_other || '', roleCode: null,
+      role: (r.role_when_used && (roleLabel.get(r.role_when_used) || r.role_when_used)) || (p?.professional_role_code && roleLabel.get(p.professional_role_code)) || p?.professional_role_other || '', roleCode: null,
       size: sizeBucket(enLabel.get(r.company_size_code)), duration: r.usage_duration_code ?? null,
       still: noStill.has(r.still_using_code) ? false : yesStill.has(r.still_using_code) ? true : null,
       works: r.main_problem ?? '', doesnt: r.biggest_difficulty || r.wishlist || '', compliance: comp,

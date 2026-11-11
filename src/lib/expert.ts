@@ -6,7 +6,7 @@ import type { CurrentUser } from '@/lib/auth/current-user';
 type Row = Record<string, any>;
 type Opt = { code: string; ar: string; en: string };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isOther = (code: string) => code.toLowerCase() === 'other';
 
 import { createHash } from 'node:crypto';
@@ -63,21 +63,21 @@ const serSystems = (j: unknown) => (Array.isArray(j) ? j.map((x: Row) => `${x.sy
 /* --------------------------------------------------------------------------------------------
  * Small helpers
  * ------------------------------------------------------------------------------------------ */
-const obj = (v: unknown): Row => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Row) : {});
-const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
-const txt = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-const nul = (s: string): string | null => s || null;
-const normalize = (s: string) => s.normalize('NFKC').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
+export const obj = (v: unknown): Row => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Row) : {});
+export const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+export const txt = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+export const nul = (s: string): string | null => s || null;
+export const normalize = (s: string) => s.normalize('NFKC').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 
-function rating(v: unknown): number | null {
+export function rating(v: unknown): number | null {
   const n = Number(v);
   return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null;
 }
-function year(v: unknown): number | null {
+export function year(v: unknown): number | null {
   const n = Number(v);
   return Number.isInteger(n) && n >= 1950 && n <= 2100 ? n : null;
 }
-function httpUrl(v: unknown, max = 400): string | null {
+export function httpUrl(v: unknown, max = 400): string | null {
   const s = txt(v, max);
   if (!s) return null;
   try {
@@ -86,7 +86,7 @@ function httpUrl(v: unknown, max = 400): string | null {
   } catch { return null; }
 }
 
-async function all(table: string, cols: string, order = 'sort_order'): Promise<Row[]> {
+export async function all(table: string, cols: string, order = 'sort_order'): Promise<Row[]> {
   const { data, error } = await db().from(table).select(cols).order(order);
   if (error) throw new Error(`${table}: ${error.message}`);
   return (data ?? []) as unknown as Row[];
@@ -104,7 +104,7 @@ let lkCache: { at: number; data: Lookups } | null = null;
 
 const opt = (r: Row): Opt => ({ code: r.code, ar: r.name_ar, en: r.name_en });
 
-async function lookups(): Promise<Lookups> {
+export async function lookups(): Promise<Lookups> {
   if (lkCache && Date.now() - lkCache.at < 30_000) return lkCache.data;
   const [roles, experience, expertise, services, countries, cities, options] = await Promise.all([
     all('rv_lk_professional_roles', 'code,name_en,name_ar'),
@@ -267,7 +267,7 @@ export async function loadExpertState(user: CurrentUser) {
 /* --------------------------------------------------------------------------------------------
  * Photo: the screen sends a small JPEG data-URL; we keep it in Storage and save only the URL
  * ------------------------------------------------------------------------------------------ */
-async function resolvePhoto(userId: string, sent: unknown, current: string | null): Promise<string | null> {
+export async function resolvePhoto(userId: string, sent: unknown, current: string | null): Promise<string | null> {
   const v = typeof sent === 'string' ? sent : '';
   const path = `experts/${userId}.jpg`;
   if (!v) {

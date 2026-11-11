@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { can, requireUser } from '@/lib/auth/current-user';
 import { db } from '@/lib/supabase/admin';
+import { medianFirstReviewMinutes } from '@/lib/expert-v2';
 
 async function count(table: string): Promise<number> {
   const { count } = await db().from(table).select('id', { count: 'exact', head: true });
@@ -17,6 +18,7 @@ export default async function AdminHome() {
     db().from('rv_reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     db().from('rv_expert_software_reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending').eq('is_complete', true),
   ]);
+  const median = await medianFirstReviewMinutes().catch(() => ({ minutes: null, people: 0 }));
   const cards = [
     { href: '/admin/roles', title: 'Roles', n: roles, text: 'Create roles and choose what each role can do.', show: can(user, 'roles.manage') },
     { href: '/admin/users', title: 'Users', n: users, text: 'Create users and give each one a role.', show: can(user, 'users.manage') },
@@ -35,6 +37,7 @@ export default async function AdminHome() {
           </Link>
         ))}
       </div>
+      <p className="muted small">Median time to complete a first expert review: <b>{median.minutes == null ? 'no data yet' : `${median.minutes} min`}</b> ({median.people} experts).</p>
       <p><Link href="/review" className="btn-ghost">Open the review screen →</Link></p>
     </>
   );

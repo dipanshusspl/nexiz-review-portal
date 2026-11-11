@@ -22,6 +22,9 @@ export const authText = (lang: Lang) => text[lang];
 
 /** English message (as sent by the server actions) -> Arabic. Used through <Flash map=... />. */
 export const errorsAr: Record<string, string> = {
+
+  "Sign-in didn't complete. Your answers are still here. Please try again.": 'لم يكتمل تسجيل الدخول. إجاباتك ما زالت هنا، حاول مرة أخرى.',
+  'Sign-in with this provider is not available right now.': 'تسجيل الدخول بهذه الوسيلة غير متاح حاليًا.',
   'Invalid email or password.': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
   'Too many failed attempts. Try again in a few minutes.': 'محاولات فاشلة كثيرة. حاول مرة أخرى بعد بضع دقائق.',
   'Full name is required.': 'الاسم الكامل مطلوب.',

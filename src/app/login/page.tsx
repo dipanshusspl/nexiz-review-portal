@@ -8,13 +8,16 @@ import TrustBar from '@/components/TrustBar';
 import LangSwitch from '@/components/LangSwitch';
 import { getLang } from '@/lib/i18n';
 import { authText, errorsAr } from '@/lib/auth-text';
+import { providerConfigured, safeNext } from '@/lib/auth/oauth';
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
   const me = await getCurrentUser();
   if (me) redirect(homePath(me));
   const sp = await searchParams;
   const lang = await getLang();
   const t = authText(lang);
+  const next = safeNext(sp.next);
+  const nq = next ? `?next=${encodeURIComponent(next)}` : '';
   return (
     <>
     <TrustBar lang={lang} />
@@ -24,11 +27,20 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <form action={login} className="login-card" style={{ maxWidth: 'none' }}>
         <div className="brand big"><span className="logo">N</span>Nexiz AI</div>
         <h1>{t.signIn}</h1>
+        {next && <input type="hidden" name="next" value={next} />}
         <Flash error={sp.error} map={lang === 'ar' ? errorsAr : undefined} />
         <label>{t.email}<input name="email" type="email" required autoComplete="username" autoFocus dir="ltr" /></label>
         <label>{t.password}<input name="password" type="password" required autoComplete="current-password" dir="ltr" /></label>
         <button className="btn-primary wide">{t.signIn}</button>
-        <Link href="/register" className="btn-ghost wide" style={{ textAlign: 'center' }}>{t.registerBtn}</Link>
+        {(providerConfigured('google') || providerConfigured('linkedin')) && (
+          <>
+            {providerConfigured('google') && <a href={`/auth/google${nq}`} className="btn-ghost wide" style={{ textAlign: 'center' }}>{lang === 'ar' ? <>المتابعة باستخدام <bdi style={{ unicodeBidi: 'isolate' }} dir="ltr">Google</bdi></> : 'Continue with Google'}</a>}
+            {providerConfigured('linkedin') && <a href={`/auth/linkedin${nq}`} className="btn-ghost wide" style={{ textAlign: 'center' }}>{lang === 'ar' ? <>المتابعة باستخدام <bdi style={{ unicodeBidi: 'isolate' }} dir="ltr">LinkedIn</bdi></> : 'Continue with LinkedIn'}</a>}
+          </>
+        )}
+                <Link href="/expert" className="btn-ghost wide" style={{ textAlign: 'center' }}>
+                  {lang === 'ar' ? 'ابدأ مراجعتك الآن (سجّل الدخول لاحقًا)' : 'Start your review now (sign in later)'}
+                </Link>
         {/* <Link href="/products" className="btn-ghost wide" style={{ textAlign: 'center' }}>{t.browse}</Link> */}
       </form>
       </div>

@@ -20,4 +20,5 @@ export const ESCALATION_LABEL: Record<string, string> = {
   burst: '3+ reviews from one account within an hour',
   vendor_dispute: 'Vendor has disputed this review',
   expert: 'Expert review (always read by a person)',
+  all_functions: 'Every function in the list was selected',
 };

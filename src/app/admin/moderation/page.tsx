@@ -76,13 +76,16 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
                 </>
               ) : (
                 <>
-                  <div><b className="small">Title:</b> {row.review_title}</div>
-                  <div><b className="small">Problem it solved:</b> {row.main_problem}</div>
+                  {row.review_title && <div><b className="small">Title:</b> {row.review_title}</div>}
+                  {row.main_problem && <div><b className="small">Problem it solved:</b> {row.main_problem}</div>}
+                  <div><b className="small">Role when used:</b> {row.role_when_used || '—'} · <b className="small">Usage:</b> {row.usage_duration_code || '—'} · <b className="small">Business:</b> {row.business_type_code || '—'} / {row.company_size_code || '—'}</div>
+                  {!row.software_id && <div className="small" style={{ color: '#8a5304' }}>Software typed by the expert (not in the catalogue yet): <b>{row.custom_software_name}</b>. Match or create it under Typed software.</div>}
                   <div><b className="small">Biggest difficulty:</b> {row.biggest_difficulty || '—'}</div>
                   <div><b className="small">Improvement wish:</b> {row.wishlist}</div>
                   <div><b className="small">Who should not buy:</b> {row.who_should_not_buy}</div>
                   <div><b className="small">Compliance:</b> {Object.entries(row.compliance ?? {}).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}</div>
-                  <div><b className="small">Features:</b> {(row.features_used ?? []).join(', ') || '—'} · <b className="small">Anonymous:</b> {String(row.anonymous)}</div>
+                  <div><b className="small">Functions used:</b> {(row.features_used ?? []).join(', ') || '—'}{row.features_other ? ` (other: ${row.features_other})` : ''} · <b className="small">Anonymous:</b> {String(row.anonymous)}</div>
+                  <div><b className="small">Integrations:</b> {row.no_integrations ? 'none used' : (row.integrations ?? []).map((x: Row) => `${x.name} [${x.outcome}] ${x.purpose}`).join(' | ') || '—'}</div>
                 </>
               )}
             </div>
