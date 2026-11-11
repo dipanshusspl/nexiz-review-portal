@@ -157,6 +157,9 @@ async function Step3({ user, category, software, lang, t, token, mail }: {
           <div><b>{swName(software)}</b><div className="muted small">{catName(category, lang)}</div></div>
           {/* S4: renamed, keeps the chosen category */}
           <Link href={`/product/${software.slug}`} className="small change">{lang === 'ar' ? 'صفحة المنتج' : 'Product page'}</Link>
+          <Link href={`/profilepage/${software.slug}`} className="small change">
+            {lang === 'ar' ? 'الملف التعريفي' : 'Profile page'}
+          </Link>
           <Link href={`/review?category=${category.slug}`} className="small change"><PencilIcon /> {t.changeSoftware}</Link>
         </div>
         {confirmUrl && (
