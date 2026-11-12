@@ -35,3 +35,16 @@ export function rejectionEmail(to: string, name: string, product: string, reason
     text: `Hello ${name},\nWe could not publish your review of ${product}.\nReason: ${reasonEn}\n\nالسبب: ${reasonAr}`,
   };
 }
+
+export function passwordResetOtpEmail(to: string, name: string, otp: string, minutes: number): Message {
+  const n = escapeHtml(name || '');
+  const code = `<p style="font-size:30px;letter-spacing:8px;font-weight:700;background:#f2f6f4;border-radius:10px;padding:14px;text-align:center;margin:16px 0">${escapeHtml(otp)}</p>`;
+  return {
+    to, subject: 'Your Nexiz password reset code / رمز إعادة تعيين كلمة المرور',
+    html: wrap(
+      `<p>Hello ${n},</p><p>Use this code to reset your Nexiz password. It is valid for ${minutes} minutes.</p>${code}` +
+      `<p style="font-size:13px;color:#53645d">If you did not ask for this, ignore this email. Your password will not change. Never share this code with anyone.</p>` +
+      `<div dir="rtl" style="margin-top:20px"><p>مرحبًا ${n}،</p><p>استخدم هذا الرمز لإعادة تعيين كلمة مرور حسابك في نكسيز. صالح لمدة ${minutes} دقائق.</p>${code}<p style="font-size:13px;color:#53645d">إذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن تتغيّر كلمة مرورك. لا تشارك هذا الرمز مع أي أحد.</p></div>`),
+    text: `Hello ${name},\nYour Nexiz password reset code is ${otp}. It is valid for ${minutes} minutes. If you did not ask for it, ignore this email.\n\nرمز إعادة تعيين كلمة المرور: ${otp} (صالح لمدة ${minutes} دقائق).`,
+  };
+}

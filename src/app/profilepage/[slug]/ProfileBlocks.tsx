@@ -71,17 +71,26 @@ export function FeatureGroups({ lang, extras }: { lang: Lang; extras: ProfileExt
     <section className={s.sec} id="features">
       <h2>{t.featuresTitle}</h2>
       <p className={s.sub}>{t.featuresSub}</p>
+      {/* one big box; each category is a row with a + that opens its features (plain <details>, no JS needed) */}
       <div className={s.groups}>
         {groups.map((g) => (
-          <div key={g.category ?? '_'} className={s.group}>
-            <div className={s.gh}><span>{categoryLabel(g.category, lang)}</span><span className={s.count}>{g.items.length}</span></div>
-            {g.items.map((f, i) => (
-              <div key={i} className={s.item}>
-                <span className={s.tick} aria-hidden>✓</span>
-                <span>{lang === 'ar' ? f.feature_ar || f.feature_en : f.feature_en || f.feature_ar}</span>
-              </div>
-            ))}
-          </div>
+          <details key={g.category ?? '_'} className={s.group}>
+            <summary className={s.gh}>
+              <span>{categoryLabel(g.category, lang)}</span>
+              <span className={s.ghEnd}>
+                <span className={s.count}>{g.items.length}</span>
+                <span className={s.plus} aria-hidden>+</span>
+              </span>
+            </summary>
+            <div className={s.gbody}>
+              {g.items.map((f, i) => (
+                <div key={i} className={s.item}>
+                  <span className={s.tick} aria-hidden>✓</span>
+                  <span>{lang === 'ar' ? f.feature_ar || f.feature_en : f.feature_en || f.feature_ar}</span>
+                </div>
+              ))}
+            </div>
+          </details>
         ))}
       </div>
     </section>
@@ -169,22 +178,32 @@ export function Integrations({ lang, extras }: { lang: Lang; extras: ProfileExtr
     <section className={s.sec} id="integrations">
       <h2>{t.intTitle}</h2>
       <p className={s.sub}>{t.intSub}</p>
+      {/* same one-box, two-column, + dropdown look as the Features section */}
       <div className={s.groups}>
         {groups.map((g) => (
-          <div key={g.category} className={s.group}>
-            <div className={s.gh}><span>{integrationCategoryLabel(g.category, lang)}</span><span className={s.count}>{g.items.length}</span></div>
-            {g.items.map((it) => (
-              <div key={it.slug} className={s.intItem}>
-                <div className={s.intTop}>
-                  <Link href={`/tech-stack#${it.slug}`} className={s.intLink}>{it.name}</Link>
-                  {it.is_native && <span className={s.tag}>{t.native}</span>}
-                  {it.is_government && <span className={`${s.tag} ${s.gov}`}>{t.gov}</span>}
+          <details key={g.category} className={s.group}>
+            <summary className={s.gh}>
+              <span>{integrationCategoryLabel(g.category, lang)}</span>
+              <span className={s.ghEnd}>
+                <span className={s.count}>{g.items.length}</span>
+                <span className={s.plus} aria-hidden>+</span>
+              </span>
+            </summary>
+            <div className={s.gbody}>
+              {g.items.map((it) => (
+                <div key={it.slug} className={s.intItem}>
+                  <div className={s.intTop}>
+                    {/* Link to /tech-stack#<slug> switched off for now (not clickable). To switch it on again: <Link href={`/tech-stack#${it.slug}`} className={s.intLink}>{it.name}</Link> */}
+                    <span>{it.name}</span>
+                    {it.is_native && <span className={s.tag}>{t.native}</span>}
+                    {it.is_government && <span className={`${s.tag} ${s.gov}`}>{t.gov}</span>}
+                  </div>
+                  {/* the notes (plan limits and their sources) exist in Arabic only, so they are shown on the Arabic page only */}
+                  {lang === 'ar' && it.notes_ar && <div className={s.intNote}>{it.notes_ar}</div>}
                 </div>
-                {/* the notes (plan limits and their sources) exist in Arabic only, so they are shown on the Arabic page only */}
-                {lang === 'ar' && it.notes_ar && <div className={s.intNote}>{it.notes_ar}</div>}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </details>
         ))}
       </div>
       <p className={s.note}>{t.intNote} <Link href="/tech-stack" className={s.intLink}>{t.allSystems}</Link></p>

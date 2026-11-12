@@ -13,6 +13,8 @@ import { entryPrice } from '@/lib/profile-labels';
 import { trustFigures } from '@/lib/stats';
 import { db } from '@/lib/supabase/admin';
 import { Alternatives, FeatureGroups, Industries, Integrations, PricingTable, SaudiSupport, money } from './ProfileBlocks';
+import BackButton from './BackButton';
+import ProfileNav from './ProfileNav';
 import s from './profile.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -56,10 +58,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
     <div className={s.shell}>
       <aside className={s.side}>
         <Link href="/review" className={s.brand}><span className={s.logo}>N</span>Nexiz AI</Link>
-        <nav className={s.nav}>
-          <a href="#top" className={s.on}>{x.overview}</a>
-          {nav.map((i) => <a key={i.id} href={`#${i.id}`}><span>{i.label}</span><span className={s.n}>{i.n}</span></a>)}
-        </nav>
+        <ProfileNav overview={x.overview} items={nav} />
         <div className={s.figs}>
           <div><b>{fig.products}</b>{x.products}</div>
           <div><b>{fig.verified}</b>{x.verified}</div>
@@ -69,9 +68,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
 
       <main className={s.main} id="top">
         <div className={s.top}>
-          <div className={s.crumbs}>
+          <div className={s.topLeft}>
+            <BackButton lang={lang} />
+            <div className={s.crumbs}>
             <Link href="/review">{x.software}</Link>
             {cat && <> / <Link href={`/review?category=${cat.slug}`}>{catName}</Link></>} / <b>{name}</b>
+            </div>
           </div>
           <div className={s.tools}>
             <form action={setLanguage} className={s.langs}>

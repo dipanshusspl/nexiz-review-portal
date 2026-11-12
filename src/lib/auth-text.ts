@@ -8,6 +8,11 @@ const text = {
     registerTitle: 'Register as an Expert', fullName: 'Full name', confirm: 'Confirm password',
     rules: 'At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.',
     register: 'Register', backToLogin: 'Back to sign in',
+    forgot: 'Forgot password?', forgotTitle: 'Forgot password',
+    forgotHelp: 'Enter your account email and we will send you a 6-digit code.', sendCode: 'Send code',
+    verifyTitle: 'Enter the code', verifyHelp: 'We sent a 6-digit code to', code: 'Verification code',
+    verify: 'Verify', resend: 'Resend code', changeEmail: 'Use a different email',
+    resetTitle: 'Set a new password', newPassword: 'New password', confirmNew: 'Confirm new password', saveNew: 'Save new password',
   },
   ar: {
     signIn: 'تسجيل الدخول', email: 'البريد الإلكتروني', password: 'كلمة المرور',
@@ -15,6 +20,11 @@ const text = {
     registerTitle: 'التسجيل كخبير', fullName: 'الاسم الكامل', confirm: 'تأكيد كلمة المرور',
     rules: 'ثمانية أحرف على الأقل، مع حرف كبير وحرف صغير ورقم ورمز.',
     register: 'تسجيل', backToLogin: 'العودة إلى تسجيل الدخول',
+    forgot: 'نسيت كلمة المرور؟', forgotTitle: 'نسيت كلمة المرور',
+    forgotHelp: 'أدخل بريدك الإلكتروني وسنرسل إليك رمزًا من 6 أرقام.', sendCode: 'إرسال الرمز',
+    verifyTitle: 'أدخل الرمز', verifyHelp: 'أرسلنا رمزًا من 6 أرقام إلى', code: 'رمز التحقق',
+    verify: 'تحقق', resend: 'إعادة إرسال الرمز', changeEmail: 'استخدام بريد آخر',
+    resetTitle: 'تعيين كلمة مرور جديدة', newPassword: 'كلمة المرور الجديدة', confirmNew: 'تأكيد كلمة المرور الجديدة', saveNew: 'حفظ كلمة المرور الجديدة',
   },
 } as const;
 
@@ -38,4 +48,14 @@ export const errorsAr: Record<string, string> = {
   'Password must include a symbol (e.g. ! @ # $ %).': 'يجب أن تحتوي كلمة المرور على رمز (مثل ! @ # $ %).',
   'An account with this email already exists. Please sign in.': 'يوجد حساب بهذا البريد الإلكتروني. يرجى تسجيل الدخول.',
   'Registration is not available right now. Please contact the administrator.': 'التسجيل غير متاح حاليًا. يرجى التواصل مع المسؤول.',
+  'We have sent a 6-digit code to your email.': 'لقد أرسلنا رمزًا من 6 أرقام إلى بريدك الإلكتروني.',
+  'No account was found with this email.': 'لا يوجد حساب بهذا البريد الإلكتروني.',
+  'Please wait a minute before asking for another code.': 'يرجى الانتظار دقيقة قبل طلب رمز آخر.',
+  'We could not send the email right now. Please try again later.': 'تعذّر إرسال البريد الآن. يرجى المحاولة لاحقًا.',
+  'Enter the 6-digit code.': 'أدخل الرمز المكوّن من 6 أرقام.',
+  'Invalid or expired code.': 'الرمز غير صحيح أو منتهي الصلاحية.',
+  'Too many wrong attempts. Please request a new code.': 'محاولات خاطئة كثيرة. يرجى طلب رمز جديد.',
+  'Your reset session expired. Please start again.': 'انتهت جلسة إعادة التعيين. يرجى البدء من جديد.',
+  'Could not update the password. Please try again.': 'تعذّر تحديث كلمة المرور. حاول مرة أخرى.',
+  'Password updated. You can now sign in.': 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.',
 };

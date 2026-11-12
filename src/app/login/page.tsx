@@ -10,7 +10,7 @@ import { getLang } from '@/lib/i18n';
 import { authText, errorsAr } from '@/lib/auth-text';
 import { providerConfigured, safeNext } from '@/lib/auth/oauth';
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string; next?: string }> }) {
   const me = await getCurrentUser();
   if (me) redirect(homePath(me));
   const sp = await searchParams;
@@ -28,9 +28,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="brand big"><span className="logo">N</span>Nexiz AI</div>
         <h1>{t.signIn}</h1>
         {next && <input type="hidden" name="next" value={next} />}
-        <Flash error={sp.error} map={lang === 'ar' ? errorsAr : undefined} />
+        <Flash ok={sp.ok} error={sp.error} map={lang === 'ar' ? errorsAr : undefined} />
         <label>{t.email}<input name="email" type="email" required autoComplete="username" autoFocus dir="ltr" /></label>
         <label>{t.password}<input name="password" type="password" required autoComplete="current-password" dir="ltr" /></label>
+        <Link href="/forgot-password" className="small" style={{ alignSelf: 'flex-end', marginTop: -4 }}>{t.forgot}</Link>
         <button className="btn-primary wide">{t.signIn}</button>
         {(providerConfigured('google') || providerConfigured('linkedin')) && (
           <>
