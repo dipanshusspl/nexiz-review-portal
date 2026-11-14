@@ -13,7 +13,7 @@ export default async function ExpertPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <ExpertBar user={user} />
-      <iframe src={sp.error ? '/expert/frame?signin=failed' : '/expert/frame'} title="Expert review" className="expert-frame" />
+      <iframe src={sp.error ? '/expert/frame?signin=failed' : '/expert/frame'} title="Expert review" className="expert-frame" allow="microphone" />
     </>
   );
 }

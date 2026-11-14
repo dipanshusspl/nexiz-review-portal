@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { submitReview } from '@/app/actions/review';
 import { ClockIcon, MicIcon } from './Icons';
+import DictateInput from './DictateInput';
 
 type Opt = { value: string; label: string };
 type Initial = {
@@ -142,9 +143,9 @@ export default function ReviewForm({ category, software, softwareName, lang, ini
           {fieldMode && (
             <div className="form-stack">
               <p className="muted small">{t.respHint}</p>
-              <label>{t.respName} *<input name="resp_name" required maxLength={120} /></label>
+              <label>{t.respName} *<DictateInput name="resp_name" required maxLength={120} lang={lang} startLabel={t.dictate} stopLabel={t.dictateStop} /></label>
               <label>{t.respContact} *<input name="resp_contact" required maxLength={254} dir="ltr" /></label>
-              <label>{t.respCompany} *<input name="resp_company" required maxLength={120} /></label>
+              <label>{t.respCompany} *<DictateInput name="resp_company" required maxLength={120} lang={lang} startLabel={t.dictate} stopLabel={t.dictateStop} /></label>
               <label>{t.collectedBy}<input value={agentName} readOnly disabled /></label>
             </div>
           )}

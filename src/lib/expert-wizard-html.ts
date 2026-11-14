@@ -68,6 +68,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .err{color:var(--error);font-size:.86rem;line-height:1.5;min-height:0}
 .err:empty{display:none}
 .note{color:var(--muted);font-size:.82rem;line-height:1.5}
+.mic-row{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+input[hidden]+.mic-row,textarea[hidden]+.mic-row{display:none}
+.mic-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #c7c3b9;background:#fff;color:var(--muted);border-radius:999px;padding:3px 12px;font-size:.85rem;cursor:pointer}
+.mic-btn:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.mic-btn.on{color:#c0392b;border-color:#c0392b;font-weight:700;background:#fdf0ee}
+.mic-btn:disabled{opacity:.5;cursor:not-allowed}
+.mic-btn svg{width:16px;height:16px}
+.mic-status{color:var(--muted);font-size:.82rem}
 .btns{display:flex;flex-wrap:wrap;gap:6px}
 .opt{border:1px solid #c7c3b9;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer}
 .opt.on{background:var(--green);color:#fff;border-color:var(--green)}
@@ -227,6 +235,18 @@ var D = {
   p_pv_t:['معاينة ملفك المهني','Your profile preview'], p_pv_note:['هذه البيانات أدخلتها بنفسك. تُراجع الخبرة والشهادات قبل اعتمادها، وصفة «خبير موثّق» لا ترتبط بعدد المراجعات.','You added this information yourself. Experience and certifications are checked before they are accepted, and verified expert status does not depend on the number of reviews.'],
   p_pv_name:['اسمك','Your name'], p_reviews_count:['مراجعات أرسلتها','Reviews submitted'], p_published_count:['مراجعات منشورة','Published reviews'],
   p_other_hint:['أخرى — اكتب الإجابة','Other \u2014 type your answer'],
+  mic_start:['إملاء صوتي','Dictate'], mic_stop:['إيقاف','Stop'],
+  mic_listening:['جارٍ الاستماع بالعربية\u2026 راجع النص بعد الإملاء.','Listening in English\u2026 review the text afterwards.'],
+  mic_added:['أُضيف النص. راجعه وعدّله قبل استخدامه.','Text added. Please review and edit it.'],
+  mic_done:['انتهى الاستماع. يمكنك الكتابة أو المحاولة مجددًا.','Stopped listening. You can type or try again.'],
+  mic_denied:['تم رفض إذن الميكروفون. اسمح به من أيقونة القفل بجانب عنوان الصفحة.','Microphone permission was denied. Allow it from the lock icon next to the page address.'],
+  mic_none:['لم يتم العثور على ميكروفون. تحقّق من توصيله وإعدادات الصوت.','No microphone found. Check it is connected and your sound settings.'],
+  mic_lang:['هذه اللغة غير مدعومة للإملاء في هذا المتصفح.','This language is not supported for dictation in this browser.'],
+  mic_fail:['تعذّر الإملاء. تحقّق من إذن الميكروفون أو اكتب إجابتك.','Dictation failed. Check the microphone permission or type your answer.'],
+  mic_silent:['لم يلتقط الميكروفون أي كلام. تحقّق من مستوى الصوت ثم حاول مجددًا.','No speech was picked up. Check the microphone volume and try again.'],
+  mic_net:['تعذّر الاتصال بخدمة التعرف على الصوت. تحقّق من الإنترنت ثم حاول مجددًا.','Could not reach the speech service. Check your internet and try again.'],
+  mic_wrongscript:['التقط الميكروفون كلامًا بالإنجليزية فتم تجاهله. تحدّث بالعربية.','Speech in another language was ignored.'],
+  mic_unsupported:['المتصفح لا يدعم الإملاء الصوتي. استخدم Chrome أو Edge أو Safari.','This browser does not support voice dictation. Use Chrome, Edge or Safari.'],
   lang_btn:['English','\u0627\u0644\u0639\u0631\u0628\u064a\u0629'],
   /* messages under fields (Appendix B + generic) */
   e_software:['اختر النظام الذي تراجعه.','Choose the software you\u2019re reviewing.'], e_role:['اختر دورك عند استخدامه.','Choose your role when you used it.'],
@@ -244,6 +264,117 @@ var D = {
   e_linkedin:['أدخل رابط ملفك على LinkedIn (linkedin.com).','Enter your LinkedIn profile URL (linkedin.com).'], e_failed:['تعذّر الحفظ. حاول مرة أخرى.','Could not save. Please try again.']
 };
 function t(k){ var e = D[k]; if(!e){ return k; } var s = e[lang === 'ar' ? 0 : 1]; for(var i = 1; i < arguments.length; i++){ s = s.split('{' + (i - 1) + '}').join(arguments[i]); } return s; }
+
+/* ---------- voice dictation: a microphone button under every text box ---------- */
+var SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+var activeMic = null;
+var MIC_NL = String.fromCharCode(10);
+var MIC_AR = [[0x600,0x6FF],[0x750,0x77F],[0xFB50,0xFDFF],[0xFE70,0xFEFF]], MIC_LAT = [[65,90],[97,122]];
+function micHas(text, ranges){
+  for(var i = 0; i < text.length; i++){ var c = text.charCodeAt(i); for(var j = 0; j < ranges.length; j++){ if(c >= ranges[j][0] && c <= ranges[j][1]){ return true; } } }
+  return false;
+}
+/** In Arabic mode the browser sometimes writes what it heard in English letters; such a result is ignored. */
+function micWrongScript(text){ return lang === 'ar' && micHas(text, MIC_LAT) && !micHas(text, MIC_AR); }
+function micJoin(a, b){
+  if(!a){ return b; } if(!b){ return a; }
+  var last = a.charAt(a.length - 1);
+  return a + (last === ' ' || last === MIC_NL ? '' : ' ') + b;
+}
+function micPaint(btn, on){
+  clear(btn);
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.8'); svg.setAttribute('stroke-linecap', 'round');
+  var shape = document.createElementNS(ns, 'rect');
+  if(on){
+    shape.setAttribute('x', '6'); shape.setAttribute('y', '6'); shape.setAttribute('width', '12'); shape.setAttribute('height', '12'); shape.setAttribute('rx', '2'); shape.setAttribute('fill', 'currentColor'); svg.appendChild(shape);
+  } else {
+    shape.setAttribute('x', '9'); shape.setAttribute('y', '2'); shape.setAttribute('width', '6'); shape.setAttribute('height', '12'); shape.setAttribute('rx', '3'); svg.appendChild(shape);
+    var path = document.createElementNS(ns, 'path'); path.setAttribute('d', 'M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8'); svg.appendChild(path);
+  }
+  btn.appendChild(svg); btn.appendChild(h('span', null, t(on ? 'mic_stop' : 'mic_start')));
+}
+function micAttach(input){
+  if(!input.parentNode){ return; }
+  input.setAttribute('data-mic', '1');
+  var btn = h('button', { type:'button', class:'mic-btn' });
+  var status = h('small', { class:'mic-status', role:'status' });
+  input.parentNode.insertBefore(h('div', { class:'mic-row' }, btn, status), input.nextSibling);
+  micPaint(btn, false);
+  if(!SpeechCtor){ btn.disabled = true; btn.title = t('mic_unsupported'); status.textContent = t('mic_unsupported'); return; }
+  function say(k){ status.textContent = k ? t(k) : ''; }
+  function fatalKey(code){ return code === 'not-allowed' || code === 'service-not-allowed' ? 'mic_denied' : code === 'audio-capture' ? 'mic_none' : code === 'language-not-supported' ? 'mic_lang' : 'mic_fail'; }
+  function finish(s, key){ if(activeMic === s){ activeMic = null; } micPaint(btn, false); say(key); }
+  function listen(s){
+    var r = new SpeechCtor();
+    r.lang = lang === 'ar' ? 'ar-SA' : 'en-US';   /* the language chosen on the page decides what the microphone writes */
+    r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    s.rec = r;
+    r.onresult = function(ev){
+      if(activeMic !== s){ return; }
+      if(!input.isConnected){ s.stopping = true; try{ r.abort(); }catch(e){} return; }
+      var finals = '', interim = '', skipped = false;
+      for(var i = ev.resultIndex; i < ev.results.length; i++){
+        var piece = ev.results[i][0].transcript;
+        if(micWrongScript(piece)){ skipped = true; continue; }
+        if(ev.results[i].isFinal){ finals += piece + ' '; } else { interim += piece; }
+      }
+      s.retries = 0; s.heard = true;
+      if(skipped && !finals.trim() && !interim.trim()){ say('mic_wrongscript'); return; }
+      if(input.value !== s.shown){ s.base = input.value; }
+      if(finals.trim()){ s.base = micJoin(s.base, finals.trim()); }
+      var next = micJoin(s.base, interim.trim());
+      var max = input.maxLength > 0 ? input.maxLength : 2000;
+      input.value = next.slice(0, max); s.shown = input.value;
+      input.dispatchEvent(new Event('input', { bubbles:true }));
+      if(!interim){ say(skipped ? 'mic_wrongscript' : 'mic_added'); }
+    };
+    r.onerror = function(ev){
+      var code = ev && ev.error;
+      if(code === 'no-speech' || code === 'network'){ s.lastErr = code; return; }
+      s.fatal = code || 'error';
+    };
+    r.onend = function(){
+      if(activeMic !== s){ micPaint(btn, false); return; }
+      if(!input.isConnected){ activeMic = null; return; }
+      if(s.stopping){ finish(s, 'mic_done'); return; }
+      if(s.fatal){ finish(s, s.fatal === 'aborted' ? '' : fatalKey(s.fatal)); return; }
+      s.base = input.value; s.retries += 1;
+      if(s.retries > 6){ finish(s, s.heard ? '' : (s.lastErr === 'network' ? 'mic_net' : 'mic_silent')); return; }
+      setTimeout(function(){
+        if(activeMic !== s || s.stopping){ return; }
+        try{ listen(s); }catch(e){ finish(s, 'mic_fail'); }
+      }, 250);   /* the browser ends a session after a pause; keep listening until the person presses Stop */
+    };
+    r.start();
+  }
+  btn.addEventListener('click', function(){
+    if(activeMic){
+      var prev = activeMic;
+      prev.stopping = true;
+      if(prev.input === input){ try{ prev.rec.stop(); }catch(e){} return; }
+      activeMic = null; try{ prev.rec.abort(); }catch(e){}
+    }
+    var s = { input:input, rec:null, base:input.value, shown:input.value, stopping:false, retries:0, heard:false, fatal:'', lastErr:'' };
+    activeMic = s; micPaint(btn, true); say('mic_listening');
+    try{ listen(s); }catch(e){ finish(s, 'mic_fail'); }
+  });
+}
+function micScan(root){
+  if(!root || root.nodeType !== 1){ return; }
+  var found = [];
+  if(root.matches && root.matches('textarea,input[type=text]')){ found.push(root); }
+  if(root.querySelectorAll){ Array.prototype.forEach.call(root.querySelectorAll('textarea,input[type=text]'), function(el){ found.push(el); }); }
+  found.forEach(function(el){
+    if(el.readOnly || el.disabled || el.hasAttribute('data-mic') || el.hasAttribute('data-nomic') || el.getAttribute('dir') === 'ltr'){ return; }
+    micAttach(el);
+  });
+}
+new MutationObserver(function(muts){ muts.forEach(function(m){ Array.prototype.forEach.call(m.addedNodes, micScan); }); })
+  .observe(document.getElementById('app') || document.body, { childList:true, subtree:true });
 
 /* ---------- tiny DOM helpers ---------- */
 var LATIN = /([A-Za-z][A-Za-z0-9&+.\/'-]*(?: [A-Za-z0-9&+.\/'-]+)*|\d{1,2}:\d{2})/g;
@@ -585,7 +716,7 @@ function checks(key, list){
 var pickFilter = 'all', pickQuery = '';
 function softwarePicker(){
   var host = h('div');
-  var search = h('input', { type:'text', placeholder:t('search_ph'), 'aria-label':t('search_ph'), autocomplete:'off' });
+  var search = h('input', { type:'text', 'data-nomic':'1', placeholder:t('search_ph'), 'aria-label':t('search_ph'), autocomplete:'off' });
   var filters = h('div', { class:'filters', role:'group' });
   var list = h('div', { class:'list', role:'radiogroup', 'aria-labelledby':'l_software' });
   var custom = h('div', { class:'box', style:'margin-top:10px' });

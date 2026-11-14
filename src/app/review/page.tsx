@@ -5,6 +5,7 @@ import Flash from '@/components/Flash';
 import Header from '@/components/Header';
 import PublicHeader from '@/components/PublicHeader';
 import ReviewForm from '@/components/ReviewForm';
+import DictateInput from '@/components/DictateInput';
 import Stepper from '@/components/Stepper';
 import TileGrid, { type Tile } from '@/components/TileGrid';
 import { ZATCA_CATEGORY_SLUGS, catName, categoryScopeIds, getCategoryBySlug, getSoftwareBySlug, listCategories, listSoftware, listUserReviews, swName } from '@/lib/data';
@@ -85,7 +86,7 @@ async function Step1({ lang, t }: { lang: 'en' | 'ar'; t: T }) {
       <details className="request">
         <summary>{t.cantFind}</summary>
         <form action={submitCategoryRequest} className="row">
-          <input name="text" required maxLength={300} placeholder={t.cantFindPh} aria-label={t.cantFindPh} />
+          <DictateInput name="text" required maxLength={300} placeholder={t.cantFindPh} aria-label={t.cantFindPh} lang={lang} startLabel={t.dictate} stopLabel={t.dictateStop} />
           <button className="btn-primary">{t.send}</button>
         </form>
       </details>

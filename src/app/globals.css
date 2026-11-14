@@ -225,3 +225,8 @@ legend { font-size: 13px; font-weight: 700; padding: 0 6px; }
 .cat-ico svg { display: block; }
 .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* voice dictation input (text box + "Dictate" button under it) */
+.dictate-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
+.dictate-field .mic { align-self: flex-start; padding: 2px 0; cursor: pointer; }
+.request .dictate-field { flex: 1; }

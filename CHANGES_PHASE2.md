@@ -69,3 +69,12 @@ Checked with a full TypeScript compile and a simulated-browser test of the exper
 4. Submit a public review with all ratings 5 (and a sub-rating or two): it should land in Pending as escalated.
 5. Visit `/api/cron/golive` with header `Authorization: Bearer <CRON_SECRET>`; it returns the list of categories it opened.
 6. Time one public and one expert review, then run the timing queries.
+
+
+Hi everyone, I have added the forget password functionality. Currentlely integrated it with our own sparrowsoftechpvtltd@gmail.com for testing purpose
+1000users a day till free
+
+user clicks forget password and enters the mail not in our db then he gets stopped, if wrong otp entered then also gets stopped. when user enters correct otp then he gets a screen to enter new password and confirm password and hence he/she can login again
+
+we have used google.console google api,  and google oath configurations which is free, there are various service providers also
+
