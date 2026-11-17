@@ -13,6 +13,9 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
+// Changed by Prachi, 2026-11-11: tech-stack added to the paths that need no login (like product and profilepage).
+// Changed by Prachi, 2026-11-17: review added, so /review opens without login. Saving a review still needs login (checked in actions/review.ts).
 export const config = {
-  matcher: ['/((?!login|register|forgot-password||confirm|product|profilepage|tech-stack|verification|privacy|review|expert|auth/|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],
-};
+  // matcher: ['/((?!login|confirm|product|profilepage|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],   // old, before 2026-11-17
+  matcher: ['/((?!login|confirm|product|profilepage|review|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],
+}

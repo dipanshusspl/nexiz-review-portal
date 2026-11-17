@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { db } from '@/lib/supabase/admin';
-import { can, getCurrentUser, type CurrentUser } from '@/lib/auth/current-user';
+import { can, requireUser } from '@/lib/auth/current-user';
 import { COMPANY_SIZES, DURATIONS, ROLES, ZATCA } from '@/lib/i18n';
 import { ZATCA_CATEGORY_SLUGS, categoryScopeIds } from '@/lib/data';
 import { redirect } from 'next/navigation';
@@ -11,6 +11,10 @@ import { extremeRatings, submittedTooFast } from '@/lib/review-rules';
 import { confirmationEmail } from '@/lib/notify/templates';
 import { notify, siteUrl } from '@/lib/notify';
 import { swName } from '@/lib/data';
+import { reviewContentChanged, snapshotOf, statusAfterSave, type ReviewStatus } from '@/lib/review-edit'; // Added by Prachi, 2026-11-03
+import { audit } from '@/lib/audit'; // Added by Prachi, 2026-11-03
+import { recordVerification } from '@/lib/verification-record'; // Added by Prachi, 2026-11-05
+import { confirmExpiryFrom } from '@/lib/confirm-token'; // Added by Prachi, 2026-11-05
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const inList = (list: readonly string[], v: string) => list.includes(v);
@@ -20,39 +24,14 @@ const rating15 = (v: FormDataEntryValue | null): number | null => {
 };
 const isMobile = (s: string) => /^\+?[0-9\s-]{8,16}$/.test(s);
 
-/**
- * Visitors who are not logged in may review without an account. Their reviews are stored under one
- * disabled placeholder account (it can never log in) and always wait in the moderation queue.
- * The placeholder is created automatically the first time it is needed.
- */
-const GUEST_EMAIL = 'guest-reviewer@nexiz.local';
-async function guestReviewer(): Promise<CurrentUser> {
-  let { data } = await db().from('rv_users').select('id').eq('email', GUEST_EMAIL).maybeSingle();
-  if (!data) {
-    const { data: role } = await db().from('rv_roles').select('id').eq('name', 'expert').maybeSingle();
-    if (!role) redirect('/review?error=failed');
-    const ins = await db().from('rv_users').insert({
-      email: GUEST_EMAIL, full_name: 'Guest reviewer', role_id: role.id,
-      password_hash: 'disabled', is_active: false, field_agent: false,
-    }).select('id').single();
-    if (ins.error || !ins.data) {
-      // a parallel request may have created it a moment ago
-      const again = await db().from('rv_users').select('id').eq('email', GUEST_EMAIL).maybeSingle();
-      if (!again.data) redirect('/review?error=failed');
-      data = again.data;
-    } else data = ins.data;
-  }
-  return { id: data!.id, email: '', fullName: 'Guest reviewer', roleId: '', roleName: 'guest', permissions: [], fieldAgent: false };
-}
-
 export async function submitReview(fd: FormData) {
-  const user = await getCurrentUser();
-  const guest = !user;
-  const me: CurrentUser = user ?? (await guestReviewer());
+  const me = await requireUser();
+  // Added by Prachi, 2026-11-17: /review now opens without login, so a visitor without login is sent to /login before anything is saved
+  if (!me) redirect('/login');
   const category = str(fd, 'category', 100);
   const software = str(fd, 'software', 100);
   const base = `/review?category=${encodeURIComponent(category)}&software=${encodeURIComponent(software)}`;
-  if (user && !can(user, 'reviews.write')) redirect('/review?error=forbidden');
+  if (!can(me, 'reviews.write')) redirect('/review?error=forbidden');
 
   // ---- core fields (P1, P2, P3, P5, A1, A2) ----
   const rating = rating15(fd.get('rating'));
@@ -141,6 +120,7 @@ export async function submitReview(fd: FormData) {
       ...row, user_id: me.id, source: 'field', verified: false, status: 'pending',
       escalated: extreme, escalation_reason: extreme ? 'all_ratings_extreme' : null,
       collected_by: me.id, respondent_id: resp.id, confirm_token: token,
+      confirm_token_expires_at: confirmExpiryFrom(), // Added by Prachi, 2026-11-05 (gap 6.15): the link stops working after 14 days. Needs sql/006_review_portal_batch2.sql
     }).select('id').single();
     if (error || !created) redirect(`${base}&error=failed`);
     await saveTiming(fd, me.id, sw.id);
@@ -157,23 +137,53 @@ export async function submitReview(fd: FormData) {
   }
 
   // ---- normal web review: one per account per product (A6) ----
-  // guests have no account, so they never edit an old review: every guest review is a new row
-  const { data: mine } = guest
-    ? { data: null }
-    : await db().from('rv_reviews').select('id,status')
-        .eq('software_id', sw.id).eq('user_id', me.id).eq('source', 'web').maybeSingle();
-  const burst = mine || guest ? false : await submittedTooFast(me.id);
+  // Changed by Prachi, 2026-11-03: was select('id,status'). The full row is needed to keep a copy of it in history.
+  const { data: mine } = await db().from('rv_reviews').select('*')
+    .eq('software_id', sw.id).eq('user_id', me.id).eq('source', 'web').maybeSingle();
+  const burst = mine ? false : await submittedTooFast(me.id);
   const reason = extreme ? 'all_ratings_extreme' : burst ? 'burst' : null;
-  // guest reviews always wait for a moderator; a rejected review that is edited goes back to a person too
-  const status = guest || mine?.status === 'rejected' || reason ? 'pending' : 'approved';
+  const changed = mine ? reviewContentChanged(mine, row) : true;
+  // Changed by Prachi, 2026-11-03: Spec p.4 + p.11. Before, only a rejected review went back to a person. Now a pending or rejected review
+  // is released only by a person, and an edited live review goes back to moderation (see EDIT_REQUIRES_MODERATION in lib/review-edit.ts).
+  const status = statusAfterSave({
+    previous: (mine?.status ?? null) as ReviewStatus | null,
+    contentChanged: changed,
+    escalated: !!reason,
+  });
+  // Added by Prachi, 2026-11-03: nothing changed on a live review, so there is nothing to save and nothing to re-check
+  if (mine && mine.status === 'approved' && !changed && !reason) {
+    redirect(`/review?category=${encodeURIComponent(category)}&ok=saved`);
+  }
+  // Added by Prachi, 2026-11-03: append-only. Keep the earlier version before it is overwritten; if history cannot be saved, the edit is refused
+  if (mine && !(await saveReviewVersion(mine, me.id))) redirect(`${base}&error=failed`);
   const moderation = { status, escalated: !!reason, escalation_reason: reason, reject_reason_code: null, reviewed_by: null, reviewed_at: null };
-  const { error } = mine
-    ? await db().from('rv_reviews').update({ ...row, ...moderation }).eq('id', mine.id)
-    : await db().from('rv_reviews').insert({ ...row, ...moderation, user_id: me.id, source: 'web', verified: true });
+  // Changed by Prachi, 2026-11-05: .select('id').single() added so the id of a new review is known
+  const { data: saved, error } = mine
+    ? await db().from('rv_reviews').update({ ...row, ...moderation }).eq('id', mine.id).select('id').single()
+    : await db().from('rv_reviews').insert({ ...row, ...moderation, user_id: me.id, source: 'web', verified: true }).select('id').single();
   if (error) redirect(`${base}&error=failed`);
+  // Added by Prachi, 2026-11-05 (gap 6.9): record HOW a new web review is verified. verified = true here means the review comes from an
+  // account an admin created (there is no public sign-up). It does not mean a work email, LinkedIn or an invoice was checked.
+  if (!mine && saved?.id) await recordVerification(String(saved.id), 'account', null, 'web review from an admin-created account');
   await saveTiming(fd, me.id, sw.id);
   // a public reviewer goes back to the list of software in this category, with the success message
   redirect(`/review?category=${encodeURIComponent(category)}&ok=saved`);
+}
+
+/** Added by Prachi, 2026-11-03: Spec p.4, evidence is append-only. Stores the review as it was before an edit (needs sql/005_review_portal_changes.sql). */
+async function saveReviewVersion(prev: Record<string, unknown>, userId: string): Promise<boolean> {
+  const reviewId = String(prev.id);
+  const { count } = await db().from('rv_review_versions').select('id', { count: 'exact', head: true }).eq('review_id', reviewId);
+  const { error } = await db().from('rv_review_versions').insert({
+    review_id: reviewId,
+    version_no: (count ?? 0) + 1,
+    snapshot: snapshotOf(prev),
+    changed_by: userId,
+    change_reason: 'user_edit',
+  });
+  if (error) return false;
+  await audit(userId, 'review.edit', 'review', reviewId, { version_no: (count ?? 0) + 1, from_status: prev.status }); // Added by Prachi, 2026-11-03
+  return true;
 }
 
 /** Form timing (client answer 5): the browser sends {total_ms, fields:{name:ms}} in a hidden field. Best effort, never blocks a review. */
@@ -190,7 +200,9 @@ async function saveTiming(fd: FormData, userId: string, softwareId: string) {
 
 /** Part 1: "Can't find your category? Tell us." — captures demand for the next categories. */
 export async function submitCategoryRequest(fd: FormData) {
-  const me = (await getCurrentUser()) ?? (await guestReviewer());
+  const me = await requireUser();
+  // Added by Prachi, 2026-11-17: /review now opens without login, so a visitor without login is sent to /login before anything is saved
+  if (!me) redirect('/login');
   const text = str(fd, 'text', 300);
   if (text.length >= 2) await db().from('rv_category_requests').insert({ user_id: me.id, text });
   redirect('/review?ok=requested');

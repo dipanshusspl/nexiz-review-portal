@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import EntityImage from '@/components/EntityImage';
 import Flash from '@/components/Flash';
 import Header from '@/components/Header';
+import { pt } from '@/lib/i18n-product'; // Added by Prachi, 2026-11-17: for the login / reviewIt words of the public header
 import PublicHeader from '@/components/PublicHeader'; // Added by Prachi, 2026-11-17: header for a visitor who is not logged in (same one the product page uses)
 import ReviewForm from '@/components/ReviewForm';
 import Stepper from '@/components/Stepper';
@@ -54,7 +55,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       {/* <Header user={user} lang={lang} t={t} current={current} /> */}
       {user
         ? <Header user={user} lang={lang} t={t} current={current} />
-        : <PublicHeader lang={lang} current={current} loggedIn={false} t={{ login: t.login, reviewIt: t.reviewIt }} />}
+        : <PublicHeader lang={lang} current={current} loggedIn={false} t={{ login: pt(lang).login, reviewIt: pt(lang).reviewIt }} />}   {/* login / reviewIt live in i18n-product, not in getDict */}
       <TrustBar lang={lang} />
       <main className="page">
         <Stepper step={step} labels={labels} />
