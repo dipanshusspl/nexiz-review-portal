@@ -33,11 +33,11 @@ const TXT = {
   en: { products: 'Products', about: 'About Us', solutions: 'Solutions', resources: 'Resources', searchPh: 'Search products...', vendor: 'Vendor', langDefault: 'Arabic, English', aiTitle: 'AI Summary', software: 'Software', login: 'Sign in', account: 'Account', ratingNone: 'No rating yet', noReviews: 'No reviews yet', reviewsWord: 'reviews', reviewWord: 'review', integrationsStat: 'Integrations', featuresStat: 'Features', fromLabel: 'From',
     fitChip: 'Check if it’s the right fit for your business', fitTitle: 'Check Business Fit', fitSub: 'Get a personalized assessment in minutes', fitCta: 'Start Assessment', soon: 'Soon',
     glance: 'Product at a Glance', category: 'Category', deployment: 'Deployment', languages: 'Languages', pricing: 'Pricing', saudi: 'Saudi Compliance', links: 'Official Links', visit: 'Visit Vendor Website',
-    compareTitle: 'Compare & Review', compareText: 'Compare {n} with alternatives or share your experience.', compare: 'Compare Software', write: 'Write a Review', shortlist: 'Save to Shortlist', perMonth: 'month', perYear: 'year' },
+    compareTitle: 'Compare & Review', compareText: 'Compare {n} with alternatives or share your experience.', compare: 'Compare Software', demo: 'Request a Demo', write: 'Write a Review', shortlist: 'Save to Shortlist', perMonth: 'month', perYear: 'year' },
   ar: { products: 'المنتجات', about: 'من نحن', solutions: 'الحلول', resources: 'المصادر', searchPh: 'ابحث عن البرامج...', vendor: 'المورّد', langDefault: 'العربية، الإنجليزية', aiTitle: 'ملخص بالذكاء الاصطناعي', software: 'البرمجيات', login: 'تسجيل الدخول', account: 'الحساب', ratingNone: 'لا يوجد تقييم بعد', noReviews: 'لا توجد تقييمات بعد', reviewsWord: 'تقييم', reviewWord: 'تقييم', integrationsStat: 'تكامل', featuresStat: 'ميزة', fromLabel: 'ابتداءً من',
     fitChip: 'تحقق من مدى ملاءمته لشركتك', fitTitle: 'تحقق من ملاءمة البرنامج', fitSub: 'احصل على تقييم مخصص خلال دقائق', fitCta: 'ابدأ التقييم', soon: 'قريبًا',
     glance: 'نظرة سريعة على المنتج', category: 'الفئة', deployment: 'النشر', languages: 'اللغات', pricing: 'الأسعار', saudi: 'الامتثال السعودي', links: 'الروابط الرسمية', visit: 'زيارة موقع المورّد',
-    compareTitle: 'قارن وقيّم', compareText: 'قارن {n} بالبدائل أو شارك تجربتك.', compare: 'مقارنة البرامج', write: 'اكتب تقييمًا', shortlist: 'حفظ في القائمة المختصرة', perMonth: 'شهريًا', perYear: 'سنويًا' },
+    compareTitle: 'قارن وقيّم', compareText: 'قارن {n} بالبدائل أو شارك تجربتك.', compare: 'مقارنة البرامج', demo: 'طلب عرض توضيحي', write: 'اكتب تقييمًا', shortlist: 'حفظ في القائمة المختصرة', perMonth: 'شهريًا', perYear: 'سنويًا' },
 } as const;
 
 /** A link when the page behind it exists, otherwise a greyed-out button with "Soon". */

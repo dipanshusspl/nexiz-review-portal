@@ -238,7 +238,7 @@ export function AlternativesRow({ lang, extras }: { lang: Lang; extras: ProfileE
     <Row id="alternatives" icon="swap" title={t.alternatives} desc={t.alternativesDesc} meta={fill(t.altCount, { n: extras.alternatives.length })}>
       <div className={s.alts}>
         {extras.alternatives.map((a) => (
-          <Link key={a.slug} href={`/profilepage/${a.slug}`} className={s.alt}>
+          <Link key={a.slug} href={`/product/${a.slug}`} className={s.alt}>
             <div className={s.altTop}>
               <EntityImage url={a.image_url} name={a.name} size={36} />
               <div><div className={s.altName}>{a.name}</div>{a.category && <div className={s.altCat}>{a.category}</div>}</div>

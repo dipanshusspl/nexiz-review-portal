@@ -170,6 +170,8 @@ a.btnLine:hover { background: #efeadb; }
 .linksTitle { margin: 18px 0 10px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 16px; color: var(--navy); }
 .btnLineFull { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 1.5px solid var(--line); background: #fff; color: var(--navy); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; }
 a.btnLineFull:hover { border-color: var(--navy); }
+.btnOrangeFull { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--orange); color: #fff !important; border-radius: 10px; padding: 14px 18px; font-size: 16px; font-weight: 600; }
+.btnOrangeFull:hover { background: var(--orange-dark); }
 .sideText { margin: -4px 0 14px; font-size: 14px; color: var(--muted); line-height: 1.55; }
 .sideBtns { display: grid; gap: 8px; }
 

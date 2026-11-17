@@ -1,5 +1,8 @@
 import 'server-only';
 import { db } from '@/lib/supabase/admin';
+import { chipStatus, type Answer } from '@/lib/chip-status'; // Added by Prachi, 2026-11-03
+import { recommendSummary, scoreSummary, sizeBucket, top } from '@/lib/score-math'; // Added by Prachi, 2026-11-05
+export { sizeBucket }; // Added by Prachi, 2026-11-05: other files may still import it from here
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -17,28 +20,23 @@ export type Item = {
 };
 export type Filters = { type?: string; size?: string; role?: string; duration?: string; still?: string };
 
-/** company-size buckets used by the public form; expert option labels ("51-200 employees") are mapped to the same buckets */
-export function sizeBucket(label: string | null | undefined): string | null {
-  if (!label) return null;
-  if (['1-10', '11-50', '51-200', '201-500', '500+'].includes(label)) return label;
-  const nums = (label.match(/\d[\d,]*/g) ?? []).map((n) => Number(n.replace(/,/g, '')));
-  if (!nums.length) return null;
-  const hi = nums[nums.length - 1];
-  if (label.includes('+') && hi >= 500) return '500+';
-  return hi <= 10 ? '1-10' : hi <= 50 ? '11-50' : hi <= 200 ? '51-200' : hi <= 500 ? '201-500' : '500+';
-}
-
+// Changed by Prachi, 2026-11-05 (gap 6.11): sizeBucket, avg, top and the score maths moved to lib/score-math.ts so they can be tested
 const PUB_COMP: Record<string, Status> = { out_of_box: 'ok', needed_help: 'partial', no: 'no', na: 'none' };
 const EXP_COMP: Record<string, Status> = { worked: 'ok', custom: 'partial', failed: 'no', none: 'none' };
 
-const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
-function top<T extends string>(xs: T[]): { value: T; n: number } | null {
-  const m = new Map<T, number>(); xs.forEach((x) => m.set(x, (m.get(x) ?? 0) + 1));
-  let best: { value: T; n: number } | null = null;
-  m.forEach((n, value) => { if (!best || n > best.n) best = { value, n }; });
-  return best;
+// Changed by Prachi, 2026-11-03: the old "on a tie, report the more cautious status" rule is replaced by chipStatus() in lib/chip-status.ts,
+// which reports "mixed" when reviewers disagree (Spec section 1.3: contradictions stay visible).
+
+// Added by Prachi, 2026-11-05 (gap 6.13): the columns read from the review tables. If the database refuses one of them (for example a column
+// was renamed), the problem is printed in the server log and the page falls back to all columns instead of showing no reviews.
+const PUB_COLS = 'id,created_at,rating_overall,would_recommend,reviewer_role,company_size,usage_duration,still_using,pros,cons,zatca_status,moved_to_software_id';
+const EXP_COLS = 'id,profile_id,created_at,overall_rating,recommended_code,company_size_code,usage_duration_code,still_using_code,main_problem,biggest_difficulty,wishlist,compliance,moved_to_software,features_used,golive_time_code,annual_cost_code,who_should_not_buy';
+async function readReviews(table: string, cols: string, filter: (q: any) => any) {
+  const first = await filter(db().from(table).select(cols));
+  if (!first.error) return first;
+  console.error(`${table}: narrow select failed (${first.error.message}); using all columns`);
+  return filter(db().from(table).select('*'));
 }
-const worse: Status[] = ['no', 'partial', 'ok']; // on a tie, report the more cautious status
 
 export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
   const { data: sw } = await db().from('rv_software').select('*').eq('slug', slug).maybeSingle();
@@ -46,8 +44,9 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
   const [{ data: cat }, { data: lkRows }, pubRes, expRes] = await Promise.all([
     db().from('rv_categories').select('id,name_en,name_ar,slug,parent_id').eq('id', sw.category_id).maybeSingle(),
     db().from('rv_lk_options').select('code,group_code,name_en,name_ar'),
-    db().from('rv_reviews').select('*').eq('software_id', sw.id).eq('verified', true).eq('status', 'approved'),
-    db().from('rv_expert_software_reviews').select('*').eq('software_id', sw.id).eq('is_complete', true).eq('status', 'approved'),
+    // Changed by Prachi, 2026-11-05 (gap 6.13): only the columns this page uses, not select('*')
+    readReviews('rv_reviews', PUB_COLS, (q) => q.eq('software_id', sw.id).eq('verified', true).eq('status', 'approved')),
+    readReviews('rv_expert_software_reviews', EXP_COLS, (q) => q.eq('software_id', sw.id).eq('is_complete', true).eq('status', 'approved')),
   ]);
   const label = new Map<string, string>(((lkRows ?? []) as Row[]).map((o) => [o.code, (lang === 'ar' ? o.name_ar : o.name_en) || o.name_en]));
   const enLabel = new Map<string, string>(((lkRows ?? []) as Row[]).map((o) => [o.code, o.name_en]));
@@ -67,7 +66,7 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
     const comp: Record<string, Status> = {};
     if (r.zatca_status && PUB_COMP[r.zatca_status]) comp.zatca = PUB_COMP[r.zatca_status];
     items.push({
-      id: 'u' + r.id, kind: 'user', date: r.created_at ?? r.updated_at ?? '', score: r.rating_overall, recommend: r.would_recommend ?? null,
+      id: 'u' + r.id, kind: 'user', date: r.created_at ?? '', score: r.rating_overall, recommend: r.would_recommend ?? null,
       role: r.reviewer_role ?? '', roleCode: r.reviewer_role ?? null, size: r.company_size ?? null, duration: r.usage_duration ?? null, still: r.still_using ?? null,
       works: r.pros ?? '', doesnt: r.cons ?? '', compliance: comp, features: [], golive: null, cost: null, whoNot: null, movedTo: r.moved_to_software_id ?? null,
     });
@@ -77,14 +76,14 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
   const yesStill = new Set(((lkRows ?? []) as Row[]).filter((o) => o.group_code === 'still_using' && (/^yes$/i.test(o.name_en ?? '') || o.name_ar === 'نعم')).map((o) => o.code));
   for (const r of (expRes.data ?? []) as Row[]) {
     const p = profMap.get(r.profile_id);
-    // review status and profile completion are independent: an approved review is public even if the profile is empty
+    if (!p || p.status !== 'submitted') continue; // an expert profile must itself be submitted
     const comp: Record<string, Status> = {};
     for (const [k, v] of Object.entries((r.compliance ?? {}) as Record<string, string>)) if (EXP_COMP[v]) comp[k] = EXP_COMP[v];
     const moved = typeof r.moved_to_software === 'string' && swName.has(r.moved_to_software) ? r.moved_to_software : null;
     items.push({
-      id: 'e' + r.id, kind: 'expert', date: r.created_at ?? r.updated_at ?? '', score: r.overall_rating,
+      id: 'e' + r.id, kind: 'expert', date: r.created_at ?? '', score: r.overall_rating,
       recommend: r.recommended_code ? yes.has(r.recommended_code) : null,
-      role: (r.role_when_used && (roleLabel.get(r.role_when_used) || r.role_when_used)) || (p?.professional_role_code && roleLabel.get(p.professional_role_code)) || p?.professional_role_other || '', roleCode: null,
+      role: (p.professional_role_code && roleLabel.get(p.professional_role_code)) || p.professional_role_other || '', roleCode: null,
       size: sizeBucket(enLabel.get(r.company_size_code)), duration: r.usage_duration_code ?? null,
       still: noStill.has(r.still_using_code) ? false : yesStill.has(r.still_using_code) ? true : null,
       works: r.main_problem ?? '', doesnt: r.biggest_difficulty || r.wishlist || '', compliance: comp,
@@ -94,25 +93,17 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
   }
 
   // ---- rating summary: user score and expert score are NEVER blended ----
-  const part = (kind: 'user' | 'expert') => {
-    const xs = items.filter((i) => i.kind === kind);
-    const enough = xs.length >= MIN_REVIEWS_TO_SCORE;
-    return { count: xs.length, score: enough ? avg(xs.map((i) => i.score)) : null, enough };
-  };
-  const userP = part('user'), expertP = part('expert');
-  const rec = items.filter((i) => i.recommend !== null);
-  const recommendPct = rec.length >= MIN_REVIEWS_TO_SCORE ? Math.round((rec.filter((i) => i.recommend).length / rec.length) * 100) : null;
+  // Changed by Prachi, 2026-11-05 (gap 6.11, 6.13): the maths lives in lib/score-math.ts. Recommend share is now worked out for users and
+  // experts separately, so the two kinds of reviewer are not blended.
+  const userP = scoreSummary(items, 'user', MIN_REVIEWS_TO_SCORE), expertP = scoreSummary(items, 'expert', MIN_REVIEWS_TO_SCORE);
+  const recommendUser = recommendSummary(items.filter((i) => i.kind === 'user'), MIN_REVIEWS_TO_SCORE);
+  const recommendExpert = recommendSummary(items.filter((i) => i.kind === 'expert'), MIN_REVIEWS_TO_SCORE);
 
   // ---- compliance chips (ZATCA, WPS, GOSI, Qiwa): publish only at 5+ answers ----
+  // Changed by Prachi, 2026-11-03: status and counts now come from chipStatus(); a chip can be "mixed" and carries how many reviewers gave each answer
   const chips = ['zatca', 'wps', 'gosi', 'qiwa'].map((k) => {
-    const answers = items.map((i) => i.compliance[k]).filter((s): s is Status => !!s && s !== 'none');
-    let status: Status = 'none';
-    if (answers.length >= MIN_COMPLIANCE_ANSWERS) {
-      const counts = new Map<Status, number>(); answers.forEach((a) => counts.set(a, (counts.get(a) ?? 0) + 1));
-      const max = Math.max(...counts.values());
-      status = worse.find((s) => counts.get(s) === max) ?? 'none';
-    }
-    return { key: k, status, answers: answers.length };
+    const answers = items.map((i) => i.compliance[k]).filter((s): s is Answer => !!s && s !== 'none');
+    return { key: k, ...chipStatus(answers, MIN_COMPLIANCE_ANSWERS) };
   });
   const complianceBase = items.filter((i) => Object.keys(i.compliance).length > 0).length;
 
@@ -145,7 +136,7 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
 
   return {
     sw: { ...sw, shownName: sw.display_name || sw.name } as Row, cat: cat as Row | null, label, swName,
-    total: items.length, userP, expertP, recommendPct, recommendBase: rec.length,
+    total: items.length, userP, expertP, recommendUser, recommendExpert,
     chips, complianceBase, sizeTop, sizeBase: sizes.length,
     golive: golive && { ...golive, base: experts.filter((i) => i.golive).length },
     cost: cost && { ...cost, base: experts.filter((i) => i.cost).length },
