@@ -3,11 +3,11 @@ import { redirect } from 'next/navigation';
 import EntityImage from '@/components/EntityImage';
 import Flash from '@/components/Flash';
 import Header from '@/components/Header';
-import PublicHeader from '@/components/PublicHeader';
+import PublicHeader from '@/components/PublicHeader'; // Added by Prachi, 2026-11-17: header for a visitor who is not logged in (same one the product page uses)
 import ReviewForm from '@/components/ReviewForm';
-import DictateInput from '@/components/DictateInput';
 import Stepper from '@/components/Stepper';
 import TileGrid, { type Tile } from '@/components/TileGrid';
+// import { requireUser } from '@/lib/auth/current-user';
 import { ZATCA_CATEGORY_SLUGS, catName, categoryScopeIds, getCategoryBySlug, getSoftwareBySlug, listCategories, listSoftware, listUserReviews, swName } from '@/lib/data';
 import { submitCategoryRequest } from '@/app/actions/review';
 import { COMPANY_SIZES, DURATIONS, ROLES, ZATCA, getDict, getLang } from '@/lib/i18n';
@@ -18,13 +18,17 @@ import { CheckIcon, PencilIcon } from '@/components/Icons';
 import { categoryStats, GO_LIVE_MIN_PRODUCTS, GO_LIVE_MIN_REVIEWS } from '@/lib/stats';
 import { db } from '@/lib/supabase/admin';
 import { whatsappLink } from '@/lib/notify';
+// Changed by Prachi, 2026-11-17: old import kept. requireUser is no longer used on this page because the page now opens without login.
+// import { isExpertPanelUser, requireUser } from '@/lib/auth/current-user';
 import { getCurrentUser, isExpertPanelUser, type CurrentUser } from '@/lib/auth/current-user';
 
 const hueOf = (s: string) => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  // open to everyone: user is null when not logged in
+  // Changed by Prachi, 2026-11-17: the page opens without login. getCurrentUser() gives null for a visitor; old lines kept below.
+  // const user = await requireUser();
+  // if (isExpertPanelUser(user)) redirect('/expert');
   const user = await getCurrentUser();
   if (user && isExpertPanelUser(user)) redirect('/expert');
   const lang = await getLang();
@@ -46,13 +50,17 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
+      {/* Changed by Prachi, 2026-11-17: old header kept as a comment; a visitor without login gets the public header */}
+      {/* <Header user={user} lang={lang} t={t} current={current} /> */}
       {user
         ? <Header user={user} lang={lang} t={t} current={current} />
-        : <PublicHeader lang={lang} current={current} loggedIn={false} t={lang === 'ar' ? { login: 'تسجيل الدخول', reviewIt: 'قيّم برنامجًا' } : { login: 'Log in', reviewIt: 'Review software' }} />}
+        : <PublicHeader lang={lang} current={current} loggedIn={false} t={{ login: t.login, reviewIt: t.reviewIt }} />}
       <TrustBar lang={lang} />
       <main className="page">
         <Stepper step={step} labels={labels} />
         <Flash ok={sp.ok} error={sp.error} map={flashMap} />
+        {/* Added by Prachi, 2026-11-17: visitor without login sees the form; Submit sends them to /login */}
+        {!user && step === 3 && <p className="muted small">{lang === 'ar' ? 'سجّل الدخول لإرسال تقييمك.' : 'Sign in to submit your review.'}</p>}
 
         {step === 1 && <Step1 lang={lang} t={t} />}
         {step === 2 && category && <Step2 category={category} lang={lang} t={t} />}
@@ -86,7 +94,7 @@ async function Step1({ lang, t }: { lang: 'en' | 'ar'; t: T }) {
       <details className="request">
         <summary>{t.cantFind}</summary>
         <form action={submitCategoryRequest} className="row">
-          <DictateInput name="text" required maxLength={300} placeholder={t.cantFindPh} aria-label={t.cantFindPh} lang={lang} startLabel={t.dictate} stopLabel={t.dictateStop} />
+          <input name="text" required maxLength={300} placeholder={t.cantFindPh} aria-label={t.cantFindPh} />
           <button className="btn-primary">{t.send}</button>
         </form>
       </details>
@@ -111,12 +119,18 @@ async function Step2({ category, lang, t }: { category: Awaited<ReturnType<typeo
   );
 }
 
-async function Step3({ user, category, software, lang, t, token, mail }: {
+// Changed by Prachi, 2026-11-17: user can be null (visitor without login). Old signature kept as a comment.
+// async function Step3({ user, category, software, lang, t, token, mail }: {
+//   user: Awaited<ReturnType<typeof requireUser>>; category: ...
+async function Step3({ user: realUser, category, software, lang, t, token, mail }: {
   user: CurrentUser | null; category: NonNullable<Awaited<ReturnType<typeof getCategoryBySlug>>>;
   software: NonNullable<Awaited<ReturnType<typeof getSoftwareBySlug>>>; lang: 'en' | 'ar'; t: T; token?: string; mail?: string;
 }) {
+  // a visitor without login gets an empty guest so the code below needs no other change; the review itself is only saved after login (submitReview)
+  const user: CurrentUser = realUser ?? { id: '', email: '', fullName: '', roleId: '', roleName: '', permissions: [], fieldAgent: false };
   const siblings = await listSoftware(category.id);
-  const reviews = user ? await listUserReviews(user.id, siblings.map((s) => s.id)) : [];
+  // const reviews = await listUserReviews(user.id, siblings.map((s) => s.id));   // old line: needs a logged-in user
+  const reviews = realUser ? await listUserReviews(user.id, siblings.map((s) => s.id)) : [];
   const mine = reviews.find((r) => r.software_id === software.id) ?? null;
   const others = siblings.filter((s) => s.id !== software.id);
   const byId = new Map(reviews.map((r) => [r.software_id, r]));
@@ -129,7 +143,7 @@ async function Step3({ user, category, software, lang, t, token, mail }: {
   // field agents: show the confirmation link, the WhatsApp button and the email status (P7).
   // The respondent's contact is read from the database by token (only for the agent who collected it), never put in the URL.
   let confirmUrl = '', waUrl = '';
-  if (token && user?.fieldAgent && /^[0-9a-f]{32}$/.test(token)) {
+  if (token && user.fieldAgent && /^[0-9a-f]{32}$/.test(token)) {
     const { data } = await db().from('rv_reviews').select('confirm_token,respondent:rv_respondents(name,contact)')
       .eq('confirm_token', token).eq('collected_by', user.id).maybeSingle();
     if (data) {
@@ -158,9 +172,8 @@ async function Step3({ user, category, software, lang, t, token, mail }: {
           <div><b>{swName(software)}</b><div className="muted small">{catName(category, lang)}</div></div>
           {/* S4: renamed, keeps the chosen category */}
           <Link href={`/product/${software.slug}`} className="small change">{lang === 'ar' ? 'صفحة المنتج' : 'Product page'}</Link>
-          <Link href={`/profilepage/${software.slug}`} className="small change">
-            {lang === 'ar' ? 'الملف التعريفي' : 'Profile page'}
-          </Link>
+          {/* Added by Prachi, 2026-11-10: button to the profile page (features, pricing, alternatives), on every product */}
+          <Link href={`/profilepage/${software.slug}`} className="small change">{lang === 'ar' ? 'الملف التعريفي' : 'Profile page'}</Link>
           <Link href={`/review?category=${category.slug}`} className="small change"><PencilIcon /> {t.changeSoftware}</Link>
         </div>
         {confirmUrl && (
@@ -174,7 +187,7 @@ async function Step3({ user, category, software, lang, t, token, mail }: {
         <ReviewForm
           key={software.id}
           category={category.slug} software={software.slug} softwareName={swName(software)} lang={lang}
-          isUpdate={!!mine} needsZatca={needsZatca} fieldAgent={user?.fieldAgent ?? false} agentName={user?.fullName ?? ''}
+          isUpdate={!!mine} needsZatca={needsZatca} fieldAgent={user.fieldAgent} agentName={user.fullName}
           initial={mine ? {
             rating: mine.rating_overall, duration: mine.usage_duration, pros: mine.pros ?? '', cons: mine.cons ?? '',
             recommend: mine.would_recommend == null ? '' : mine.would_recommend ? 'yes' : 'no',

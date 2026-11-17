@@ -1,3 +1,6 @@
+// Changed by Prachi, 2026-11-13: a "Profile page" link added in the header (prod-head).
+// Why: the product list, the search and the alternatives now open /profilepage/<slug>, so this reviews page is reached from the
+// Reviews row of the profile page. The link gives the way back to the profile page.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import EntityImage from '@/components/EntityImage';
@@ -40,7 +43,8 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const { sw, cat, label } = data;
   const catName = cat ? (lang === 'ar' ? cat.name_ar || cat.name_en : cat.name_en) : '';
   const L = (code: string | null) => (code ? label.get(code) ?? code : '');
-  const statusWord: Record<Status, string> = { ok: t.s_ok, partial: t.s_partial, no: t.s_no, none: t.s_none };
+  // Changed by Prachi, 2026-11-03: added the "mixed" state
+  const statusWord: Record<Status | 'mixed', string> = { ok: t.s_ok, partial: t.s_partial, no: t.s_no, none: t.s_none, mixed: t.s_mixed };
   const featLabel = (k: string) => (t[('f_' + k) as keyof PT] as string) ?? k;
   const durLabel = (c: string | null) => (c && DURATIONS.includes(c as (typeof DURATIONS)[number]) ? (d[('d_' + c) as keyof typeof d] as string) : L(c));
   const roleLabel = (c: string | null) => (c && (ROLES as readonly string[]).includes(c) ? (d[('r_' + c) as keyof typeof d] as string) : '');
@@ -58,6 +62,8 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             <h1>{sw.shownName}</h1>
             <div className="muted small">{[sw.vendor_name && `${t.by} ${sw.vendor_name}`, catName].filter(Boolean).join(' · ')}</div>
           </div>
+          {/* Added by Prachi, 2026-11-13: the way back to the profile page (marginInlineStart auto = right side in English, left side in Arabic) */}
+          <Link href={`/profilepage/${slug}`} className="btn-ghost" style={{ marginInlineStart: 'auto' }}>{lang === 'ar' ? 'الملف التعريفي' : 'Profile page'}</Link>
         </div>
 
         {/* 2 rating summary: user and expert scores are never blended */}
@@ -72,10 +78,14 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
                     <span className="sr-only" style={{ position: 'absolute', left: -9999 }}>{data.userP.score.toFixed(1)} {t.outOf5}</span></>)
                 : (<><div className="muted">{t.tooFew}</div><div className="muted small fig">{data.userP.count} {data.userP.count === 1 ? t.review : t.reviewsWord} · {t.userScore}</div></>)}
             </div>
+            {/* Changed by Prachi, 2026-11-05 (gap 6.13): the recommend share is shown for users and for experts separately, not blended */}
             <div>
-              {data.recommendPct !== null
-                ? (<><div className="score-xl">{data.recommendPct}%</div><div className="muted small">{t.wouldRecommend} · <span className="fig">{data.recommendBase}</span> {t.reviewsWord}</div></>)
+              {data.recommendUser.pct !== null
+                ? (<><div className="score-xl">{data.recommendUser.pct}%</div><div className="muted small">{t.wouldRecommend} · {t.users} · <span className="fig">{data.recommendUser.base}</span> {t.reviewsWord}</div></>)
                 : (<div className="muted small">{t.tooFew}</div>)}
+              {data.recommendExpert.pct !== null && (
+                <div className="muted small" style={{ marginTop: 6 }}>{t.expertScore}: <span className="fig">{data.recommendExpert.pct}%</span> {t.wouldRecommend} · <span className="fig">{data.recommendExpert.base}</span> {t.reviewsWord}</div>
+              )}
             </div>
           </div>
           <div style={{ marginTop: 16 }}>
@@ -94,6 +104,8 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
                 <span className="mark" aria-hidden />
                 <b className="lt">{t[c.key as keyof PT] as string}</b>
                 <span>{statusWord[c.status]}</span>
+                {/* Added by Prachi, 2026-11-03: how many reviewers answered, and for a mixed chip how the answers split */}
+                {c.status !== 'none' && <span className="muted small">({c.answers} {t.answersWord}{c.status === 'mixed' ? `: ${t.s_ok} ${c.counts.ok} · ${t.s_partial} ${c.counts.partial} · ${t.s_no} ${c.counts.no}` : ''})</span>}
               </span>
             ))}
           </div>

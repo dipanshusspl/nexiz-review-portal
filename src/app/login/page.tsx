@@ -9,6 +9,7 @@ import LangSwitch from '@/components/LangSwitch';
 import { getLang } from '@/lib/i18n';
 import { authText, errorsAr } from '@/lib/auth-text';
 import { providerConfigured, safeNext } from '@/lib/auth/oauth';
+import PasswordField from '@/components/PasswordField';
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string; next?: string }> }) {
   const me = await getCurrentUser();
@@ -30,7 +31,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         {next && <input type="hidden" name="next" value={next} />}
         <Flash ok={sp.ok} error={sp.error} map={lang === 'ar' ? errorsAr : undefined} />
         <label>{t.email}<input name="email" type="email" required autoComplete="username" autoFocus dir="ltr" /></label>
-        <label>{t.password}<input name="password" type="password" required autoComplete="current-password" dir="ltr" /></label>
+        <PasswordField label={t.password} name="password" autoComplete="current-password" lang={lang} />
         <Link href="/forgot-password" className="small" style={{ alignSelf: 'flex-end', marginTop: -4 }}>{t.forgot}</Link>
         <button className="btn-primary wide">{t.signIn}</button>
         {(providerConfigured('google') || providerConfigured('linkedin')) && (
