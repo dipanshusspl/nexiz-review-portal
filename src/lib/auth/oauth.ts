@@ -16,7 +16,7 @@ const CFG: Record<Provider, Cfg> = {
   google: {
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth', tokenUrl: 'https://oauth2.googleapis.com/token',
     jwks: 'https://www.googleapis.com/oauth2/v3/certs', issuers: ['https://accounts.google.com', 'accounts.google.com'],
-    scope: 'openid email profile', idEnv: 'GOOGLE_CLIENT_ID', secretEnv: 'GOOGLE_CLIENT_SECRET',
+    scope: 'openid email profile', idEnv: 'GMAIL_CLIENT_ID', secretEnv: 'GMAIL_CLIENT_SECRET',
   },
   linkedin: {
     authUrl: 'https://www.linkedin.com/oauth/v2/authorization', tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',

@@ -3,6 +3,8 @@ import { approveReview, flagDispute, rejectReview } from '@/app/actions/moderati
 import { requirePermission } from '@/lib/auth/current-user';
 import { ESCALATION_LABEL } from '@/lib/review-rules';
 import { db } from '@/lib/supabase/admin';
+import { getBadgesByProfileId, getReviewCountsByProfileId } from '@/lib/badges';
+import UserBadge from '@/components/UserBadge';
 
 export const dynamic = 'force-dynamic';
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -29,6 +31,8 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
   ]);
   const uMap = new Map<string, Row>(((users ?? []) as Row[]).map((u) => [u.id, u]));
   const pMap = new Map<string, Row>(((profs ?? []) as Row[]).map((p) => [p.id, p]));
+  const badges = await getBadgesByProfileId(profIds);
+  const approvedCounts = await getReviewCountsByProfileId(profIds);
 
   type Card = { kind: 'user' | 'expert'; id: string; row: Row; at: string; esc: boolean };
   const cards: Card[] = [
@@ -60,7 +64,8 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
             <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <span className="badge">{kind === 'expert' ? 'Expert' : row.source === 'field' ? 'Field user' : 'User'}</span>
               <b>{swName.get(row.software_id) ?? row.custom_software_name ?? 'Unknown product'}</b>
-              <span className="muted small">by {author?.full_name || '—'} ({author?.email || '—'}){row.source === 'field' && uMap.get(row.collected_by) ? ` · collected by ${uMap.get(row.collected_by)!.full_name}` : ''}</span>
+              <span className="muted small">by {author?.full_name || '—'}{kind === 'expert' && <UserBadge badge={badges.get(row.profile_id) ?? null} size={16} />} ({author?.email || '—'}){row.source === 'field' && uMap.get(row.collected_by) ? ` · collected by ${uMap.get(row.collected_by)!.full_name}` : ''}</span>
+              {kind === 'expert' && <span className="muted small">{approvedCounts.get(row.profile_id) ?? 0} approved review(s) so far</span>}
               <span className="muted small">rating {rating(row) ?? '—'}/5</span>
               {tab === 'pending' && <span className="small" style={{ color: age > SLA_HOURS ? '#8c2f2f' : undefined }}>{age}h waiting{age > SLA_HOURS ? ' (past 48h target)' : ''}</span>}
             </div>

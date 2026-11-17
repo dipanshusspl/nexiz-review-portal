@@ -2,6 +2,7 @@ import { can, getCurrentUser } from '@/lib/auth/current-user';
 import { EXPERT_WIZARD_HTML } from '@/lib/expert-wizard-html';
 import { loadMyReviews, loadProfileState, loadReviewCatalog } from '@/lib/expert-v2';
 import { providerConfigured } from '@/lib/auth/oauth';
+import { getBadge } from '@/lib/badges';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,13 +23,14 @@ export async function GET(req: Request) {
   const view = url.searchParams.get('view') === 'profile' && user ? 'profile' : 'review';
 
   let catalogJson: string, stateJson: string;
+  const badge = user ? await getBadge(user.id) : null;
   try {
     const [catalog, reviews, profile] = await Promise.all([
       loadReviewCatalog(), user ? loadMyReviews(user) : Promise.resolve([]), user ? loadProfileState(user) : Promise.resolve(null),
     ]);
     catalogJson = safeJson(catalog);
     stateJson = safeJson({
-      signedIn: !!user, view, signinFailed: url.searchParams.get('signin') === 'failed',
+      signedIn: !!user, badge, view, signinFailed: url.searchParams.get('signin') === 'failed',
       user: user ? { name: user.fullName, email: user.email } : null,
       providers: { google: providerConfigured('google'), linkedin: providerConfigured('linkedin') },
       reviews, profile: profile?.profile ?? null, avatar: profile?.avatar ?? '', avatar_from_provider: profile?.avatar_from_provider ?? false,

@@ -247,6 +247,7 @@ var D = {
   mic_net:['تعذّر الاتصال بخدمة التعرف على الصوت. تحقّق من الإنترنت ثم حاول مجددًا.','Could not reach the speech service. Check your internet and try again.'],
   mic_wrongscript:['التقط الميكروفون كلامًا بالإنجليزية فتم تجاهله. تحدّث بالعربية.','Speech in another language was ignored.'],
   mic_unsupported:['المتصفح لا يدعم الإملاء الصوتي. استخدم Chrome أو Edge أو Safari.','This browser does not support voice dictation. Use Chrome, Edge or Safari.'],
+  badge_gold:['الشارة الذهبية من نكسيز: خبير بثلاث مراجعات أو أكثر','Nexiz golden badge: expert with 3 or more reviews'], badge_white:['شارة نكسيز: خبير لديه مراجعة واحدة على الأقل','Nexiz badge: expert with at least 1 review'],
   lang_btn:['English','\u0627\u0644\u0639\u0631\u0628\u064a\u0629'],
   /* messages under fields (Appendix B + generic) */
   e_software:['اختر النظام الذي تراجعه.','Choose the software you\u2019re reviewing.'], e_role:['اختر دورك عند استخدامه.','Choose your role when you used it.'],
@@ -1236,12 +1237,18 @@ function renderProfileBar(){
   var pct = profilePct(), b = $('#pbar'); if(!b){ return; }
   clear(b); b.appendChild(h('div', { class:'slot-line' }, h('b', null, t('prof_progress')), h('span', { class:'small' }, pct + '%'))); b.appendChild(h('div', { class:'bar', style:'margin-top:6px' }, h('i', { style:'width:' + pct + '%' })));
 }
+/** The Nexiz N badge (golden or white) next to the name; nothing when the expert has none. */
+function badgeImg(size){
+  if(!ST.badge){ return null; }
+  var txt = t(ST.badge === 'gold' ? 'badge_gold' : 'badge_white');
+  return h('img', { src:'/badges/nexiz-badge-' + ST.badge + '.png', width:size, height:size, alt:txt, title:txt, style:'vertical-align:middle;margin-inline-start:6px' });
+}
 function renderProfilePreview(){
   var host = $('#ppreview'); if(!host){ return; } clear(host);
   host.appendChild(h('h3', { style:'margin-top:0' }, t('p_pv_t')));
   var pv = h('div', { class:'pv' });
   pv.appendChild(h('div', { class:'who' }, ST.avatar ? h('img', { class:'avatar', src:ST.avatar, alt:'' }) : h('div', { class:'avatar' }, (P.full_name || '?').trim().slice(0, 1)),
-    h('div', null, h('b', null, P.full_name || t('p_pv_name')), h('div', { class:'muted small' }, codeOrLabel(CAT.OPTIONS.professional_role, P.professional_role)))));
+    h('div', null, h('b', null, P.full_name || t('p_pv_name'), badgeImg(20)), h('div', { class:'muted small' }, codeOrLabel(CAT.OPTIONS.professional_role, P.professional_role)))));
   if(P.experience_years){ pv.appendChild(h('div', { class:'small muted' }, codeOrLabel(CAT.OPTIONS.experience, P.experience_years))); }
   if(P.consultant_bio){ pv.appendChild(h('div', { style:'white-space:pre-wrap' }, P.consultant_bio.slice(0, 400))); }
   if((ST.specialties || []).length){ pv.appendChild(h('div', null, ST.specialties.map(function(v){ return h('span', { class:'tag' }, codeOrLabel(CAT.OPTIONS.expertise, v)); }))); }
