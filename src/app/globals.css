@@ -230,3 +230,21 @@ legend { font-size: 13px; font-weight: 700; padding: 0 6px; }
 .dictate-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
 .dictate-field .mic { align-self: flex-start; padding: 2px 0; cursor: pointer; }
 .request .dictate-field { flex: 1; }
+ /* added by prachi */
+.btn-demo { display: inline-block; text-align: center; background: #ff6a00; color: #fff; border: 0; border-radius: 10px; padding: 10px 22px; font-weight: 700; cursor: pointer; text-decoration: none; }
+.btn-demo:hover { background: #e55f00; }
+.btn-demo.wide { width: 100%; margin-top: 10px; }
+.btn-vendor { display: block; text-align: center; background: #0b1f3a; color: #fff; border: 0; border-radius: 10px; padding: 10px 22px; font-weight: 700; cursor: pointer; text-decoration: none; list-style: none; }
+.btn-vendor::-webkit-details-marker { display: none; }
+.btn-vendor:hover { background: #14305a; }
+.btn-vendor.wide { width: 100%; margin-top: 10px; }
+.vendor-dd { margin-top: 10px; }
+.vendor-dd > summary.btn-vendor { margin-top: 0; }
+.vendor-menu { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--white); margin-top: 6px; overflow: hidden; }
+.vendor-menu a { padding: 10px 14px; color: var(--ink); text-decoration: none; font-size: 14px; }
+.vendor-menu a:hover { background: var(--brand-tint); }
+.login-card textarea, .login-card select { width: 100%; border: 1px solid #cfd8d3; border-radius: 10px; padding: 10px 12px; background: #fff; }
+.biz-box { background: var(--surface-sunken); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.btn-ghost.wide { display: block; width: 100%; margin-top: 10px; }
+.vendor-menu button { padding: 10px 14px; color: var(--ink); background: none; border: 0; font-size: 14px; text-align: start; cursor: pointer; }
+.vendor-menu button:hover { background: var(--brand-tint); }

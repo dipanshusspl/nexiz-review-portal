@@ -13,6 +13,7 @@ import { getCurrentUser } from '@/lib/auth/current-user';
 import { getLang } from '@/lib/i18n';
 import { loadProduct } from '@/lib/product';
 import { loadProfileExtras } from '@/lib/profile-extras';
+import { compareHref } from '@/lib/compare-pure';
 import { entryPrice } from '@/lib/profile-labels';
 import { db } from '@/lib/supabase/admin';
 import BackButton from './BackButton';
@@ -20,13 +21,13 @@ import { AlternativesRow, FeaturesRow, IndustriesRow, IntegrationsRow, OverviewC
 import { FitIllustration, Ic } from './ProfileIcons';
 import ProfileTabs, { type Tab } from './ProfileTabs';
 import s from './profile.module.css';
-
+import VendorMenu from '@/components/VendorMenu';
+import DemoButton from '@/components/DemoButton';
 export const dynamic = 'force-dynamic';
 
 // These three buttons are in the design but the pages behind them are not built yet. While a value is null the button is shown greyed out
 // with "Soon". Put a path here (for example '/compare') and it becomes a normal link.
 const ASSESSMENT_HREF: string | null = null;
-const COMPARE_HREF: string | null = null;
 const SHORTLIST_HREF: string | null = null;
 
 const TXT = {
@@ -85,6 +86,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
   const languages = joinList((sw as Record<string, unknown>).languages) || x.langDefault;   // empty languages show Arabic, English (decision 2026-11-13)
   const vendor = ((sw.vendor_name as string | null) ?? '').trim() || null;                           // empty for every product today: the row shows "Soon" until it is filled
   const codes = glanceCodes(extras, lang);
+  const COMPARE_HREF = compareHref([slug]);   // 2026-11-18: opens /compare?p=<this product>; the person adds up to four more there
   const writeHref = `/review?${cat ? `category=${cat.slug}&` : ''}software=${slug}`;
 
   const total = prod?.total ?? 0;
@@ -181,8 +183,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
             <AlternativesRow lang={lang} extras={extras} />
             <ReviewsRow lang={lang} slug={slug} total={total} user={userP} expert={expertP} writeHref={writeHref} />
           </main>
-
+{/* by prachi */}
           <aside className={s.side}>
+            <DemoButton slug={slug} lang={lang} />
+            <VendorMenu slug={slug} lang={lang} />
             <section className={s.card}>
               <h2 className={s.sideTitle}><span className={s.tile}><Ic name="chart" size={19} /></span>{x.glance}</h2>
               <dl className={s.glance}>
