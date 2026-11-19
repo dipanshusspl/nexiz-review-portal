@@ -18,6 +18,6 @@ export async function middleware(req: NextRequest) {
 export const config = {
   // matcher: ['/((?!login|confirm|product|profilepage|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],   // old, before 2026-11-17
   // matcher: ['/((?!login|confirm|product|profilepage|review|request-demo|go/demo|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],
-  // matcher: ['/((?!login|confirm|product|profilepage|review|expert|auth/|forgot-password|request-demo|go/demo|contact-vendor|go/contact|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],
-  matcher: ['/((?!login|confirm|product|profilepage|compare|review|expert|auth/|forgot-password|request-demo|go/demo|contact-vendor|go/contact|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.\\.(?:png|jpg|jpeg|svg|webp|ico)$).)'],
+  //matcher: ['/((?!login|confirm|product|profilepage|review|expert|auth/|forgot-password|request-demo|go/demo|contact-vendor|go/contact|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],
+  matcher: ['/((?!login|confirm|product|profilepage|compare|review|expert|auth/|forgot-password|request-demo|go/demo|contact-vendor|go/contact|tech-stack|verification|privacy|api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)'],
 }

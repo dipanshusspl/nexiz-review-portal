@@ -51,7 +51,7 @@ export async function startAuth(p: Provider, origin: string, next: string) {
   const u = new URL(c.authUrl);
   u.search = new URLSearchParams({
     response_type: 'code', client_id: process.env[c.idEnv]!, redirect_uri: redirectUri(origin, p),
-    scope: c.scope, state, nonce, code_challenge: challenge, code_challenge_method: 'S256',
+    scope: c.scope, state, nonce, ...(p === 'google' ? { code_challenge: challenge, code_challenge_method: 'S256' } : {}),
   }).toString();
   return { url: u.toString(), cookie };
 }
@@ -64,22 +64,25 @@ export async function finishAuth(p: Provider, origin: string, code: string, stat
   if (!cookieValue || !code || !state) throw new Error('missing');
   const { payload } = await jwtVerify(cookieValue, secret(), { algorithms: ['HS256'] });
   if (payload.p !== p || payload.state !== state) throw new Error('state');
-
+  const mask = (v?: string) => (v ? `${v.slice(0, 4)}...${v.slice(-3)} (length ${v.length})` : 'MISSING');
+  console.log('[oauth] sending client id', mask(process.env[c.idEnv]), '| secret', mask(process.env[c.secretEnv]));
   const res = await fetch(c.tokenUrl, {
     method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
     body: new URLSearchParams({
       grant_type: 'authorization_code', code, redirect_uri: redirectUri(origin, p),
-      client_id: process.env[c.idEnv]!, client_secret: process.env[c.secretEnv]!, code_verifier: String(payload.verifier),
+      client_id: process.env[c.idEnv]!, client_secret: process.env[c.secretEnv]!, ...(p === 'google' ? { code_verifier: String(payload.verifier) } : {}),
     }),
     cache: 'no-store',
   });
-  const tok = (await res.json().catch(() => ({}))) as { id_token?: string };
+  const tok = (await res.json().catch(() => ({}))) as { id_token?: string; error?: string; error_description?: string };
+  console.log('[oauth] token exchange', res.status, tok.error ?? '', tok.error_description ?? '', '| id_token present =', !!tok.id_token);
   if (!res.ok || !tok.id_token) throw new Error('token');
 
   const { payload: id } = await jwtVerify(tok.id_token, createRemoteJWKSet(new URL(c.jwks)), {
     issuer: c.issuers, audience: process.env[c.idEnv]!,
   });
-  if (id.nonce !== payload.nonce) throw new Error('nonce');
+    // Google returns our nonce, LinkedIn does not reliably. For LinkedIn the login is still protected by state, the client secret and the signature check.
+  if (p === 'google' && id.nonce !== payload.nonce) throw new Error('nonce');
   const email = String(id.email ?? '').toLowerCase();
   // Linking by email is only safe when the provider says the email is verified.
   if (!email || (id.email_verified !== true && id.email_verified !== 'true')) throw new Error('email');
