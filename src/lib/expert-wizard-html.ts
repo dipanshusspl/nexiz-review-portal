@@ -144,12 +144,23 @@ html[dir=rtl] .chip{padding:1px 12px 1px 4px}
 .opt.dis{opacity:.45;cursor:not-allowed}
 .btns.col .opt{padding:9px 14px}
 .sub{margin-top:8px;display:grid;gap:8px}
-@media(max-width:900px){.grid,.checks{grid-template-columns:1fr}.mrow,.rate{grid-template-columns:1fr}}
-@media(max-width:700px){main{padding:12px 16px 40px}.filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}.chipf{flex:none;white-space:nowrap}.opt{padding:9px 13px;min-height:40px}.rate .btns{flex-wrap:nowrap}.rate .opt{padding:9px 0;flex:1;min-width:0}.rate .opt.long{flex:2}}
+.two>*{min-width:0}
+.nav-load{position:fixed;inset:0;z-index:60;background:rgba(247,245,239,.72);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.nav-load.on{display:flex}
+.nav-load .sp{width:34px;height:34px;border-radius:50%;border:4px solid #cfe3da;border-top-color:var(--green);animation:navspin .8s linear infinite}
+.nav-load .tx{color:var(--muted);font-size:.9rem}
+.nav-top{position:fixed;top:0;left:0;right:0;height:3px;z-index:61;background:var(--green);transform-origin:left;transform:scaleX(0);opacity:0}
+.nav-top.on{opacity:1;animation:navgrow 12s cubic-bezier(.1,.7,.2,1) forwards}
+@keyframes navspin{to{transform:rotate(360deg)}}
+@keyframes navgrow{to{transform:scaleX(.92)}}
+@media(max-width:900px){.grid,.checks{grid-template-columns:1fr}.mrow,.rate{grid-template-columns:1fr}.two{grid-template-columns:minmax(0,1fr)}.aside{position:static;order:2}}
+@media(max-width:700px){html,body{overflow-x:hidden}.top{align-items:flex-start}.top h1{font-size:1.15rem}.card{padding:14px;border-radius:10px}.nav{flex-direction:column;align-items:stretch}.nav .grp{width:100%}.nav .grp .btn{flex:1;text-align:center}.upload{gap:10px}.entry{padding:10px}.avatar{width:60px;height:60px}.pv .who{flex-wrap:wrap}.pv,.pv>*{min-width:0;overflow-wrap:anywhere}.slot-line{align-items:flex-start}.toast{inset-inline:10px}main{padding:12px 16px 40px}.filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}.chipf{flex:none;white-space:nowrap}.opt{padding:9px 13px;min-height:40px}.rate .btns{flex-wrap:nowrap}.rate .opt{padding:9px 0;flex:1;min-width:0}.rate .opt.long{flex:2}}
 </style>
 </head>
 <body>
 <main id="app"></main>
+<div id="navtop" class="nav-top" aria-hidden="true"></div>
+<div id="navload" class="nav-load" role="status" aria-live="polite"><span class="sp" aria-hidden="true"></span><span class="tx" id="navloadtx"></span></div>
 <script>
 'use strict';
 var CAT = __CATALOG_JSON__;
@@ -1464,6 +1475,27 @@ function renderProfile(app){
 /* =====================================================================================
  * Start
  * ===================================================================================== */
+/* Loading indicator for moves between Reviews and Professional profile (full page loads inside this frame). */
+(function(){
+  var ov = document.getElementById('navload'), tp = document.getElementById('navtop'), tx = document.getElementById('navloadtx'), tm = null;
+  function off(){ if(tm){ clearTimeout(tm); tm = null; } if(ov){ ov.classList.remove('on'); } if(tp){ tp.classList.remove('on'); } }
+  function on(){
+    if(tx){ tx.textContent = (lang === 'ar' ? '\u062c\u0627\u0631\u064d \u0627\u0644\u062a\u062d\u0645\u064a\u0644...' : 'Loading...'); }
+    if(tp){ tp.classList.remove('on'); void tp.offsetWidth; tp.classList.add('on'); }
+    if(ov){ ov.classList.add('on'); }
+    if(tm){ clearTimeout(tm); } tm = setTimeout(off, 20000);
+  }
+  document.addEventListener('click', function(e){
+    if(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey){ return; }
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if(!a || a.target === '_blank' || a.hasAttribute('download')){ return; }
+    var u; try{ u = new URL(a.href, window.location.href); }catch(x){ return; }
+    if(u.origin !== window.location.origin || u.pathname.indexOf('/expert') !== 0){ return; }
+    if(u.pathname === window.location.pathname && u.search === window.location.search){ return; }
+    on();
+  }, false);
+  window.addEventListener('pageshow', off);
+})();
 ['input', 'click', 'keydown'].forEach(function(ev){ document.addEventListener(ev, activity, true); });
 document.addEventListener('focusin', function(e){
   var el = e.target;
