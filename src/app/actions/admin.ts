@@ -176,7 +176,7 @@ export async function saveSoftware(fd: FormData) {
   const categoryId = str(fd, 'category_id', 60);
   if (!name || !categoryId) return back(path, 'error', 'Name and category are required.');
   const row: Record<string, unknown> = {
-    name, display_name: optional(fd, 'display_name', 120) ?? name, category_id: categoryId, slug: slugify(str(fd, 'slug', 80) || name),
+    name, display_name: optional(fd, 'display_name', 120) ?? name, name_ar: optional(fd, 'name_ar', 120), category_id: categoryId, slug: slugify(str(fd, 'slug', 80) || name),
     website: optional(fd, 'website', 300), description: optional(fd, 'description', 1000),
     sort_order: Number(fd.get('sort_order')) || 0, updated_at: new Date().toISOString(),
   };

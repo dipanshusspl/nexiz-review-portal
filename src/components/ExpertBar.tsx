@@ -3,6 +3,7 @@ import { logout } from '@/app/actions/auth';
 import { canOpenAdmin, type CurrentUser } from '@/lib/auth/current-user';
 import { getBadge } from '@/lib/badges';
 import UserBadge from '@/components/UserBadge';
+import ExpertSignInLink from '@/components/ExpertSignInLink';
 
 /** Slim top bar for the Expert panel. (The language switch lives inside the client's screen itself.) */
 export default async function ExpertBar({ user }: { user: CurrentUser | null }) {
@@ -11,7 +12,7 @@ export default async function ExpertBar({ user }: { user: CurrentUser | null }) 
     <header className="topbar">
       <Link href="/expert" className="brand"><span className="logo">N</span>Nexiz AI</Link>
       <div className="topbar-right">
-        {!user && <Link href="/login?next=%2Fexpert" className="btn-ghost">Sign in</Link>}
+        {!user && <ExpertSignInLink />}
         {user && <UserBadge badge={badge} />}
         {user && <details className="menu">
           <summary className="avatar" aria-label="account">{user.fullName.charAt(0).toUpperCase()}</summary>

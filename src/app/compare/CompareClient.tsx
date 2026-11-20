@@ -22,7 +22,7 @@ const TXT = {
     missing: 'Not found, so skipped: {n}', needTwo: 'Add one more product to start comparing.', viewProfile: 'View profile', demo: 'Request a Demo', website: 'Visit Vendor Website',
     howDiffer: 'How they differ', howSub: 'Written from the data below, so every line can be checked.', best: 'Best', same: 'Same in all',
     sections: 'Sections', soon: 'Soon',
-    overview: 'Overview', overviewD: 'The basics at a glance.', category: 'Category', vendor: 'Vendor', deployment: 'Deployment', languages: 'Languages', featuresN: 'Features documented', integrationsN: 'Integrations documented',
+    overview: 'Overview', overviewD: 'The basics at a glance.', productName: 'Product', category: 'Category', vendor: 'Vendor', deployment: 'Deployment', languages: 'Languages', featuresN: 'Features documented', integrationsN: 'Integrations documented',
     saudi: 'Saudi Compliance', saudiD: 'Documented support for Saudi regulations and government systems.', saudiNote: 'A vendor listing does not mean that the relevant authority endorses the solution. Verify current status with the vendor before purchase.',
     features: 'Features', featuresD: 'Features documented by each vendor.', integrations: 'Integrations', integrationsD: 'Business tools and platforms each product connects with.', native: 'Native', gov: 'Government',
     pricing: 'Pricing', pricingD: 'Plans documented by each vendor.', from: 'Starting from', lowest: 'Lowest', freePlan: 'Free plan', plans: 'Plans', onRequest: 'Price on request', free: 'Free', popular: 'Most popular', yes: 'Yes', no: 'No', perMonth: 'month', perYear: 'year', perMonthShort: '/ mo',
@@ -49,7 +49,7 @@ const TXT = {
     missing: 'غير موجود وتم تجاوزه: {n}', needTwo: 'أضف منتجًا آخر لبدء المقارنة.', viewProfile: 'عرض الملف', demo: 'طلب عرض توضيحي', website: 'زيارة موقع المورّد',
     howDiffer: 'كيف تختلف', howSub: 'مكتوبة من البيانات أدناه، لذا يمكن التحقق من كل سطر.', best: 'الأفضل', same: 'متشابه في الجميع',
     sections: 'الأقسام', soon: 'قريبًا',
-    overview: 'نظرة عامة', overviewD: 'الأساسيات في لمحة.', category: 'الفئة', vendor: 'المورّد', deployment: 'النشر', languages: 'اللغات', featuresN: 'الميزات الموثّقة', integrationsN: 'التكاملات الموثّقة',
+    overview: 'نظرة عامة', overviewD: 'الأساسيات في لمحة.', productName: 'المنتج', category: 'الفئة', vendor: 'المورّد', deployment: 'النشر', languages: 'اللغات', featuresN: 'الميزات الموثّقة', integrationsN: 'التكاملات الموثّقة',
     saudi: 'الامتثال السعودي', saudiD: 'دعم موثّق للأنظمة واللوائح والأنظمة الحكومية في السعودية.', saudiNote: 'إدراج المورّد لا يعني أن الجهة المختصة تعتمد الحل. تحقق من الحالة الحالية لدى المورّد قبل الشراء.',
     features: 'الميزات', featuresD: 'ميزات موثّقة من كل مورّد.', integrations: 'التكاملات', integrationsD: 'أدوات ومنصات الأعمال التي يتكامل معها كل منتج.', native: 'مدمج', gov: 'حكومي',
     pricing: 'الأسعار', pricingD: 'باقات موثّقة من كل مورّد.', from: 'ابتداءً من', lowest: 'الأقل', freePlan: 'باقة مجانية', plans: 'الباقات', onRequest: 'السعر حسب الطلب', free: 'مجاني', popular: 'الأكثر شعبية', yes: 'نعم', no: 'لا', perMonth: 'شهريًا', perYear: 'سنويًا', perMonthShort: '/ شهر',
@@ -180,6 +180,7 @@ export default function CompareClient({ lang, products, catalog, missing }: { la
   const priceCell = (e: ReturnType<typeof entry>) => e ? <span className={s.price}><b>{'⁦'}{money(e.amount)}{'⁩'}</b> <small>{e.currency} / {cycleWord(e.cycle)}</small>{e.cycle === 'yearly' && <small className={s.sub}>≈ {'⁦'}{money(perMonth(e))} {e.currency} {t.perMonthShort}{'⁩'}</small>}{e.name && <small className={s.sub}>{t.lowestPlan}: {e.name}</small>}</span> : <span className={s.muted}>{t.onRequest}</span>;
 
   const overview: Line[] = [
+    { key: 'name', label: t.productName, cells: products.map((x) => <b>{x.name}</b>) },
     { key: 'cat', label: t.category, cells: products.map((x) => x.category || t.none) },
     { key: 'price', label: t.from, best: cheap, bestLabel: t.lowest, cells: entries.map(priceCell) },
     { key: 'vendor', label: t.vendor, cells: products.map((x) => x.vendor || <span className={s.muted}>{t.none}</span>) },
@@ -213,14 +214,14 @@ export default function CompareClient({ lang, products, catalog, missing }: { la
   const industries: Line[] = industryRows.map((r) => ({
     key: r.key, label: <>{r.label}{cov(r.cells.filter((c) => c !== null).length)}</>, best: best(r.cells as (number | null)[]), bestLabel: t.highest,
     cells: r.cells.map((c) => (c === null ? <span className={s.dash} aria-label={t.noData}>—</span> :
-      <span className={s.fit}><span className={s.track} role="img" aria-label={`${c}%`}><span className={s.trackFill} style={{ ['--w' as string]: `${Math.max(0, Math.min(100, c as number))}%` }} /></span><b>{c}</b></span>)),
+      <span className={`${s.fit} mc-fit`}><span className={s.track} role="img" aria-label={`${c}%`}><span className={s.trackFill} style={{ ['--w' as string]: `${Math.max(0, Math.min(100, c as number))}%` }} /></span><b>{c}</b></span>)),
   }));
 
   const pricing: Line[] = [
     { key: 'from', label: t.from, best: cheap, cells: entries.map(priceCell) },
     { key: 'free', label: t.freePlan, same: new Set(products.map((x) => x.plans.some((q) => q.price === 0))).size === 1, cells: products.map((x) => tick(x.plans.some((q) => q.price === 0))) },
     { key: 'plans', label: t.plans, cells: products.map((x) => x.plans.length ? (
-      <ul className={s.planList}>
+      <ul className={`${s.planList} mc-planList`}>
         {x.plans.slice(0, 5).map((q, i) => (
           <li key={i} className={q.popular ? s.planPop : undefined}>
             <span className={s.planName}>{q.name}{q.popular && <small className={s.pillGold}>{t.popular}</small>}</span>
@@ -246,7 +247,7 @@ export default function CompareClient({ lang, products, catalog, missing }: { la
       <div className={s.bar} aria-hidden="true" />
       <Hero t={t} />
 
-      <div className={s.toolbar}>
+      <div className={`${s.toolbar} mc-toolbar`}>
         <span className={s.count}><b>{fill(t.count, { n, m: MAX_COMPARE })}</b></span>
         {missing.length > 0 && <span className={s.warnInline} role="status">{fill(t.missing, { n: missing.join(', ') })}</span>}
         <span className={s.grow} />
@@ -259,33 +260,33 @@ export default function CompareClient({ lang, products, catalog, missing }: { la
       </div>
 
       {insights.length > 0 && (
-        <section className={s.insights} aria-label={t.howDiffer}>
-          <div className={s.insHead}><span className={p.tile}><Ic name="spark" size={19} /></span><div><h2>{t.howDiffer}</h2><small>{t.howSub}</small></div></div>
+        <section className={`${s.insights} mc-insights`} aria-label={t.howDiffer}>
+          <div className={`${s.insHead} mc-insHead`}><span className={p.tile}><Ic name="spark" size={19} /></span><div><h2>{t.howDiffer}</h2><small>{t.howSub}</small></div></div>
           <ul>{insights.map((i, k) => <li key={k} style={{ ['--i' as string]: k } as React.CSSProperties}><span className={s.insIc}><Ic name={i.icon} size={16} /></span>{i.text}</li>)}</ul>
         </section>
       )}
 
       <nav className={s.nav} aria-label={t.sections}>
         {sections.map((x) => (
-          <button key={x.id} type="button" onClick={() => jump(x.id)} className={x.id === active ? `${s.navBtn} ${s.navOn}` : s.navBtn} aria-current={x.id === active ? 'true' : undefined}>
+          <button key={x.id} type="button" onClick={() => jump(x.id)} className={x.id === active ? `${s.navBtn} mc-navBtn ${s.navOn}` : s.navBtn} aria-current={x.id === active ? 'true' : undefined}>
             <Ic name={x.icon} size={16} /><span>{x.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className={s.scroller} onPointerLeave={() => setHot(null)}>
+      <div className={`${s.scroller} mc-scroller`} onPointerLeave={() => setHot(null)}>
         <div ref={sentinel} className={s.sentinel} aria-hidden="true" />
-        <div className={`${s.head} ${stuck ? s.headSmall : ''}`}>
-          <div className={s.headLabel} />
+        <div className={`${s.head} mc-head ${stuck ? s.headSmall : ''}`}>
+          <div className={`${s.headLabel} mc-headLabel`} />
           {products.map((x, i) => (
-            <div key={x.slug} className={`${s.pCard} ${hot === i ? s.hot : ''}`} onPointerEnter={() => setHot(i)}>
+            <div key={x.slug} className={`${s.pCard} mc-pCard ${hot === i ? s.hot : ''}`} onPointerEnter={() => setHot(i)}>
               <span className={s.letter} data-i={i}>{LETTERS[i]}</span>
-              <button type="button" className={s.x} onClick={() => removeSlug(x.slug)} aria-label={`${t.remove} ${x.name}`} title={t.remove}>×</button>
-              <Link href={`/profilepage/${x.slug}`} className={s.pTop}>
+              <button type="button" className={`${s.x} mc-x`} onClick={() => removeSlug(x.slug)} aria-label={`${t.remove} ${x.name}`} title={t.remove}>×</button>
+              <Link href={`/profilepage/${x.slug}`} className={`${s.pTop} mc-pTop`}>
                 <span className={s.pLogo}><EntityImage url={x.imageUrl} name={x.name} size={stuck ? 30 : 46} /></span>
-                <span className={s.pName}>{x.name}</span>
+                <span className={`${s.pName} mc-pName`}>{x.name}</span>
               </Link>
-              <div className={s.pMeta}>
+              <div className={`${s.pMeta} mc-pMeta`}>
                 {x.category && <span className={s.pCat}>{x.category}</span>}
                 <span className={s.pRate}><Ic name="star" size={14} className={s.starIc} />{x.userScore !== null ? x.userScore.toFixed(1) : '—'}</span>
               </div>
@@ -301,10 +302,11 @@ export default function CompareClient({ lang, products, catalog, missing }: { la
         {industries.length > 0 && <Section id="industries" basis={t.bIndustries} icon="chart" title={t.industries} desc={t.industriesD} lines={industries} {...{ products, hot, setHot, diffOnly, t }} />}
         <Section id="reviews" basis={fill(t.bReviews, { m: 5 })} icon="star" title={t.reviews} desc={t.reviewsD} lines={reviews} {...{ products, hot, setHot, diffOnly, t }} />
 
-        <div className={s.actions}>
-          <div className={s.headLabel} />
+        <div className={`${s.actions} mc-actions`}>
+          <div className={`${s.headLabel} mc-headLabel`} />
           {products.map((x, i) => (
-            <div key={x.slug} className={`${s.actCell} ${hot === i ? s.hot : ''}`} onPointerEnter={() => setHot(i)}>
+            <div key={x.slug} className={`${s.actCell} mc-actCell ${hot === i ? s.hot : ''}`} onPointerEnter={() => setHot(i)}>
+              <span className={`${s.who} mc-who`} aria-hidden="true"><span className={s.letter} data-i={i}>{LETTERS[i]}</span><em>{x.name}</em></span>
               <Link href={`/request-demo?product=${encodeURIComponent(x.slug)}`} className={s.navy}>{t.demo}</Link>
               <Link href={`/profilepage/${x.slug}`} className={s.outline}>{t.viewProfile}</Link>
               {x.website && <a href={x.website} target="_blank" rel="noopener noreferrer" className={s.outline}>{t.website}<Ic name="arrow" size={14} className={p.flip} /></a>}
@@ -321,13 +323,13 @@ export default function CompareClient({ lang, products, catalog, missing }: { la
 
 function Hero({ t }: { t: (typeof TXT)['en'] | (typeof TXT)['ar'] }) {
   return (
-    <section className={s.hero}>
+    <section className={`${s.hero} mc-hero`}>
       <div>
         <span className={s.heroChip}><Ic name="scale" size={14} />{t.chip}</span>
         <h1>{t.title}</h1>
         <p>{t.sub}</p>
       </div>
-      <svg className={s.heroArt} viewBox="0 0 260 120" aria-hidden="true">
+      <svg className={`${s.heroArt} mc-heroArt`} viewBox="0 0 260 120" aria-hidden="true">
         <rect x="10" y="28" width="44" height="82" rx="8" fill="#1B3A5C" /><rect x="64" y="10" width="44" height="100" rx="8" fill="#C9A227" />
         <rect x="118" y="38" width="44" height="72" rx="8" fill="#1B3A5C" /><rect x="172" y="20" width="44" height="90" rx="8" fill="#D9541E" />
         <rect x="226" y="48" width="28" height="62" rx="8" fill="#1B3A5C" /><path d="M6 114h250" stroke="#FAF8F3" strokeOpacity=".35" strokeWidth="2" strokeLinecap="round" />
@@ -347,37 +349,38 @@ function Section({ id, icon, title, desc, lines, note, basis, stats, collapsible
   const hidden = shown.length - rows.length;
   const hiddenSame = lines.length - shown.length;
   return (
-    <section id={id} className={s.sec}>
-      <header className={s.secHead}>
+    <section id={id} className={`${s.sec} mc-sec`}>
+      <header className={`${s.secHead} mc-secHead`}>
         <span className={p.tile}><Ic name={icon} size={19} /></span>
         <h2>{title}</h2><span className={s.secDesc}>{desc}</span>
         {diffOnly && hiddenSame > 0 && <span className={s.sameNote}>{t.same}: {hiddenSame}</span>}
       </header>
       {basis && (
-        <p className={s.basis}>
+        <p className={`${s.basis} mc-basis`}>
           <span><b>{t.basisLabel}:</b> {basis}</span>
           {stats && lines.length > 0 && <span className={s.stats}>{t.statTotal}: <b>{lines.length}</b> · <b>{lines.filter((l) => l.same).length}</b> {t.statSame} · <b>{lines.filter((l) => !l.same).length}</b> {t.statDiff}. {t.covHint}</span>}
         </p>
       )}
       {/* on a phone the pinned header is off, so each section repeats the letters of the products */}
-      <div className={s.miniHead} aria-hidden="true"><div className={s.headLabel} />{products.map((x, i) => <span key={x.slug} className={s.miniItem} title={x.name}><span className={s.letter} data-i={i}>{LETTERS[i]}</span><em>{x.name}</em></span>)}</div>
+      <div className={`${s.miniHead} mc-miniHead`} aria-hidden="true"><div className={`${s.headLabel} mc-headLabel`} />{products.map((x, i) => <span key={x.slug} className={s.miniItem} title={x.name}><span className={s.letter} data-i={i}>{LETTERS[i]}</span><em>{x.name}</em></span>)}</div>
       <div className={s.rows}>
         {rows.map((l) => (
-          <div key={l.key} className={s.row}>
-            <div className={s.rLabel}>{l.label}</div>
+          <div key={l.key} className={`${s.row} mc-row`}>
+            <div className={`${s.rLabel} mc-rLabel`}>{l.label}</div>
             {l.cells.map((c, i) => (
-              <div key={i} className={`${s.cell} ${l.best === i ? s.best : ''} ${hot === i ? s.hot : ''}`} onPointerEnter={() => setHot(i)}>
-                {c}{l.best === i && <small className={s.bestTag} title={basis}>{l.bestLabel ?? bestLabel ?? t.best}</small>}
+              <div key={i} className={`${s.cell} mc-cell ${l.best === i ? `${s.best} mc-best` : ''} ${hot === i ? s.hot : ''}`} onPointerEnter={() => setHot(i)}>
+                <span className={`${s.who} mc-who`} aria-hidden="true"><span className={s.letter} data-i={i}>{LETTERS[i]}</span><em>{products[i].name}</em></span>
+                {c}{l.best === i && <small className={`${s.bestTag} mc-bestTag`} title={basis}>{l.bestLabel ?? bestLabel ?? t.best}</small>}
               </div>
             ))}
           </div>
         ))}
-        {rows.length === 0 && <p className={s.allSame}>{t.same}</p>}
+        {rows.length === 0 && <p className={`${s.allSame} mc-allSame`}>{t.same}</p>}
       </div>
       {collapsible && shown.length > VISIBLE_ROWS && (
-        <div className={s.moreWrap}><button type="button" className={p.moreBtn} style={{ marginBottom: 0 }} onClick={() => setAll(!all)}>{all ? t.showLess : `${t.showMore} (${hidden})`}</button></div>
+        <div className={`${s.moreWrap} mc-moreWrap`}><button type="button" className={p.moreBtn} style={{ marginBottom: 0 }} onClick={() => setAll(!all)}>{all ? t.showLess : `${t.showMore} (${hidden})`}</button></div>
       )}
-      {note ? <p className={`${p.note} ${s.secNote}`}>{note}</p> : <div style={{ height: 6 }} />}
+      {note ? <p className={`${p.note} ${s.secNote} mc-secNote`}>{note}</p> : <div style={{ height: 6 }} />}
     </section>
   );
 }

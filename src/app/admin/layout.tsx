@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin/software', label: 'Software', show: can(user, 'software.manage') || can(user, 'images.manage') },
     // { href: '/admin/pending-software', label: 'Typed software', show: can(user, 'software.manage') },
     // { href: '/admin/functions', label: 'Function lists', show: can(user, 'software.manage') },
-    { href: '/admin/demo-requests', label: 'Demo requests', show: can(user, 'software.manage') },
+    { href: '/admin/demo-requests', label: 'Public request', show: can(user, 'software.manage') },
   ];
   return (
     <>

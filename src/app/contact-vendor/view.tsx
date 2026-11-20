@@ -2,9 +2,9 @@
 // (each opened by /go/contact?slug=<slug>&option=..., which logs the click first). Shown in a pop-up on the product page (embed=1) or as a normal page.
 // Open without login (see middleware.ts). The pricing option also asks branches, system users, employees and business activity,
 // unless we already hold them for the logged-in user.
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { submitContact } from '@/app/actions/contact';
+import DoneActions from '@/components/DoneActions';
 import Flash from '@/components/Flash';
 import Footer from '@/components/Footer';
 import LangSwitch from '@/components/LangSwitch';
@@ -64,10 +64,7 @@ export default async function ContactVendorView({ option, sp }: { option: 'prici
           {sp.done ? (
             <div className="login-card" style={{ maxWidth: 'none' }}>
               <h1>{x.doneTitle}</h1>
-              <p>{x.doneText.replace('{id}', sp.done)}</p>
-              {embed
-                ? <a href={`/profilepage/${slug}`} target="_top" className="btn-ghost wide" style={{ textAlign: 'center' }}>{x.back}</a>
-                : <Link href={`/profilepage/${slug}`} className="btn-ghost wide" style={{ textAlign: 'center' }}>{x.back}</Link>}
+              <DoneActions id={sp.done} text={x.doneText} slug={slug} embed={embed} back={x.back} lang={lang} />
             </div>
           ) : (
             <form action={submitContact} className="login-card" style={{ maxWidth: 'none' }}>

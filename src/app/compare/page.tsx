@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { setLanguage } from '@/app/actions/auth';
 import Footer from '@/components/Footer';
+import NavMore from '@/components/NavMore';
+import SearchSuggest from '@/components/SearchSuggest';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { getLang } from '@/lib/i18n';
 import { loadCatalog, loadCompare } from '@/lib/compare';
@@ -35,24 +37,24 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   return (
     <div className={p.page}>
-      <header className={p.topbar}>
-        <Link href="/review" className={p.brand}><span className={p.logo}>N</span>Nexiz AI</Link>
-        <nav className={p.topnav}>
+      <header className={`${p.topbar} mp-topbar`}>
+        <Link href="/review" className={`${p.brand} mp-brand`}><span className={p.logo}>N</span>Nexiz AI</Link>
+        <nav className={`${p.topnav} mp-topnav`}>
           <Link href="/products">{x.products}</Link>
           <span className={p.navOff} aria-disabled="true">{x.solutions}<small className={p.soonPlain}>{x.soon}</small></span>
           <span className={p.navOff} aria-disabled="true">{x.resources}<small className={p.soonPlain}>{x.soon}</small></span>
           <span className={p.navOff} aria-disabled="true">{x.about}<small className={p.soonPlain}>{x.soon}</small></span>
         </nav>
-        <form action="/products" method="get" role="search" className={p.search}>
+        <SearchSuggest items={catalog} lang={lang} placeholder={x.searchPh} className={`${p.search} mp-search`}>
           <Ic name="search" size={16} />
-          <input type="search" name="q" placeholder={x.searchPh} aria-label={x.searchPh} />
-        </form>
-        <div className={p.topEnd}>
+        </SearchSuggest>
+        <div className={`${p.topEnd} mp-topEnd`}>
           <form action={setLanguage}>
             <input type="hidden" name="to" value={compareHref(data.products.map((q) => q.slug))} />
             <button name="lang" value={lang === 'ar' ? 'en' : 'ar'} className={p.langBtn}><Ic name="globe" size={17} />{lang === 'ar' ? 'English' : 'عربي'}</button>
           </form>
           <Link href={user ? '/review' : '/login'} className={p.userBtn} aria-label={user ? x.account : x.login} title={user ? x.account : x.login}><Ic name="user" size={18} /></Link>
+          <NavMore products={x.products} solutions={x.solutions} resources={x.resources} about={x.about} soon={x.soon} label={lang === 'ar' ? 'القائمة' : 'Menu'} />
         </div>
       </header>
 

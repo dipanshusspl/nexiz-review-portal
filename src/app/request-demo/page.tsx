@@ -1,9 +1,9 @@
 // Added by Prachi, 2026-11-17: the "Request a Demo" form, opened by /go/demo?slug=<slug> (which logs the click first).
 // Shown in a pop-up on the product page (embed=1) or as a normal page.
 // Open without login (see middleware.ts). Name and email are filled in for a logged-in visitor, but can be changed.
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { submitDemo } from '@/app/actions/demo';
+import DoneActions from '@/components/DoneActions';
 import Flash from '@/components/Flash';
 import Footer from '@/components/Footer';
 import LangSwitch from '@/components/LangSwitch';
@@ -52,10 +52,7 @@ export default async function RequestDemoPage({ searchParams }: { searchParams: 
           {sp.done ? (
             <div className="login-card" style={{ maxWidth: 'none' }}>
               <h1>{x.doneTitle}</h1>
-              <p>{x.doneText.replace('{id}', sp.done)}</p>
-              {embed
-                ? <a href={`/profilepage/${slug}`} target="_top" className="btn-ghost wide" style={{ textAlign: 'center' }}>{x.back}</a>
-                : <Link href={`/profilepage/${slug}`} className="btn-ghost wide" style={{ textAlign: 'center' }}>{x.back}</Link>}
+              <DoneActions id={sp.done} text={x.doneText} slug={slug} embed={embed} back={x.back} lang={lang} />
             </div>
           ) : (
             <form action={submitDemo} className="login-card" style={{ maxWidth: 'none' }}>

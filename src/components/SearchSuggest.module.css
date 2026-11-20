@@ -1,0 +1,12 @@
+/* Added 2026-11-18: the suggestion list under the top-bar search box */
+.pop { position: absolute; top: calc(100% + 6px); inset-inline-end: 0; width: max(100%, 340px); max-width: calc(100vw - 32px); z-index: 60; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 34px rgba(11, 28, 51, .16); padding: 6px; display: grid; gap: 2px; }
+.row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: start; border: 0; background: transparent; border-radius: 9px; padding: 7px 9px; cursor: pointer; font: inherit; color: var(--text); }
+.row.on { background: #f3eedd; }
+.row img, .row :global(.ent-img) { border-radius: 8px; flex: none; }
+.txt { display: grid; min-width: 0; line-height: 1.25; }
+.txt b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.txt small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.txt mark { background: transparent; color: #c25400; font-weight: 700; }
+.none { padding: 10px 12px; font-size: 13px; color: var(--muted); }
+.all { margin-top: 2px; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; background: transparent; padding: 10px 12px 6px; text-align: start; font: inherit; font-size: 13px; font-weight: 600; color: var(--navy); cursor: pointer; }
+.all:hover { text-decoration: underline; }

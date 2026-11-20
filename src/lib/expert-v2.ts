@@ -28,6 +28,47 @@ export const INTEGRATION_OUTCOMES: Opt[] = [
   { code: 'worked', en: 'Worked well', ar: 'نجح بشكل جيد' }, { code: 'effort', en: 'Needed effort', ar: 'احتاج جهدًا' },
   { code: 'failed', en: 'Did not work', ar: 'لم ينجح' },
 ];
+export const GOALS: Opt[] = [
+  { code: 'goal_zatca', en: 'ZATCA e-invoicing compliance', ar: 'الالتزام بالفوترة الإلكترونية (زاتكا)' },
+  { code: 'goal_excel', en: 'Moving off Excel or paper', ar: 'الانتقال من الإكسل أو الدفاتر' },
+  { code: 'goal_inventory', en: 'Inventory and cost control', ar: 'ضبط المخزون والتكاليف' },
+  { code: 'goal_branches', en: 'Managing multiple branches', ar: 'إدارة فروع متعددة' },
+  { code: 'goal_reporting', en: 'Faster, clearer financial reporting', ar: 'تقارير مالية أسرع وأوضح' },
+  { code: 'goal_payroll', en: 'Payroll and compliance (Mudad, GOSI)', ar: 'الرواتب والامتثال (مدد، التأمينات)' },
+  { code: 'goal_connect', en: 'Connecting sales or an online store to accounting', ar: 'ربط المبيعات أو المتجر الإلكتروني بالحسابات' },
+  { code: 'goal_replace', en: 'Replacing a system that no longer fit', ar: 'استبدال نظام سابق لم يعد مناسبًا' },
+  { code: 'other', en: 'Other (please specify)', ar: 'أخرى (يرجى التحديد)' },
+];
+export const RESOLVED: Opt[] = [
+  { code: 'res_full', en: 'Yes, fully', ar: 'نعم بالكامل' }, { code: 'res_part', en: 'Partly', ar: 'جزئيًا' }, { code: 'res_no', en: 'No', ar: 'لا' },
+];
+export const STOP_REASONS: Opt[] = [
+  { code: 'stop_price', en: 'Price', ar: 'السعر' }, { code: 'stop_features', en: 'Missing features', ar: 'نقص في الخصائص' },
+  { code: 'stop_support', en: 'Poor support', ar: 'ضعف الدعم' }, { code: 'stop_compliance', en: 'Compliance or e-invoicing problems', ar: 'مشكلات في الامتثال أو الفوترة' },
+  { code: 'stop_hard', en: 'Hard to use', ar: 'صعوبة الاستخدام' }, { code: 'stop_outgrew', en: 'The business outgrew it', ar: 'المنشأة كبرت عليه' },
+  { code: 'stop_mgmt', en: 'Management decision or job change', ar: 'قرار من الإدارة أو تغيير وظيفة' }, { code: 'other', en: 'Other (please specify)', ar: 'أخرى (يرجى التحديد)' },
+];
+export const LAST_USED: Opt[] = [
+  { code: 'last_6m', en: 'Within the last 6 months', ar: 'خلال آخر 6 أشهر' }, { code: 'last_6_12', en: '6 to 12 months ago', ar: 'منذ 6 إلى 12 شهرًا' },
+  { code: 'last_1y', en: 'More than a year ago', ar: 'منذ أكثر من سنة' },
+];
+/** Shorter compliance labels (19 Nov fix 4.3) and the corrected Arabic wording; the codes are unchanged. */
+export const COMPLIANCE_STATUS_V2: Opt[] = [
+  { code: 'worked', en: 'Works out of the box', ar: 'يعمل مباشرة' },
+  { code: 'custom', en: 'Needed customisation', ar: 'احتاج تخصيص' },
+  { code: 'failed', en: 'Doesn\u2019t work', ar: 'لا يعمل' },
+  { code: 'none', en: 'Didn\u2019t use it', ar: 'لم أستخدمه' },
+];
+const COMPLIANCE_ROWS_V2: Opt[] = COMPLIANCE_ROWS.map((r) => r.code === 'zatca' ? { ...r, ar: 'الفوترة الإلكترونية (زاتكا، المرحلة الثانية)' } : r);
+const GOAL_SET = new Set(GOALS.map((o) => o.code));
+const RESOLVED_SET = new Set(RESOLVED.map((o) => o.code));
+const STOP_SET = new Set(STOP_REASONS.map((o) => o.code));
+const LAST_SET = new Set(LAST_USED.map((o) => o.code));
+/** Categories that are NOT shown in the expert portal (HR, CRM, e-commerce, logistics). */
+const HIDDEN_CATEGORY_SLUGS = new Set(['hr-payroll', 'crm', 'e-commerce', 'ecommerce', 'logistics']);
+const HIDDEN_CATEGORY_NAMES = new Set(['hr & payroll', 'hr and payroll', 'hr', 'crm', 'e-commerce', 'ecommerce', 'logistics']);
+const GROUP_ORDER: Record<string, number> = { pos: 0, erp: 1, accounting: 2 };
+
 export type FnGroup = 'accounting' | 'erp' | 'pos';
 export const FN_GROUPS: FnGroup[] = ['accounting', 'erp', 'pos'];
 
@@ -65,20 +106,25 @@ export async function functionLists(): Promise<Record<FnGroup, Opt[]>> {
 export async function loadReviewCatalog() {
   const [lk, cats, sw, fns, reasons] = await Promise.all([
     lookups(),
-    all('rv_categories', 'id,name_en,name_ar,is_live,function_group'),
-    all('rv_software', 'id,category_id,name,display_name'),
+    all('rv_categories', 'id,slug,name_en,name_ar,is_live,function_group'),
+    all('rv_software', 'id,category_id,name,display_name,name_ar,search_aliases_ar'),
     functionLists(),
     all('rv_reject_reasons', 'code,name_en,name_ar'),
   ]);
   const grp = new Map<string, FnGroup>(cats.map((c) => [c.id, (FN_GROUPS.includes(c.function_group) ? c.function_group : 'accounting') as FnGroup]));
-  const liveCat = new Set(cats.filter((c) => c.is_live).map((c) => c.id));
+  // only live categories that belong to POS / ERP / Accounting are offered to experts
+  const shown = new Set(cats.filter((c) => c.is_live && !HIDDEN_CATEGORY_SLUGS.has(String(c.slug ?? '')) && !HIDDEN_CATEGORY_NAMES.has(String(c.name_en ?? '').trim().toLowerCase()) && (!c.function_group || FN_GROUPS.includes(c.function_group))).map((c) => c.id));
   const options: Record<string, Opt[]> = {};
   for (const o of lk.options) (options[o.group_code] ??= []).push({ code: o.code, ar: o.ar, en: o.en });
   const pick = (g: string) => options[g] ?? [];
+  const software = sw.filter((s) => shown.has(s.category_id)).map((s) => {
+    const en = String(s.display_name || s.name);
+    return { id: s.id, en, ar: String(s.name_ar || '').trim() || en, al: (Array.isArray(s.search_aliases_ar) ? s.search_aliases_ar.join(' ') : String(s.search_aliases_ar ?? '')).trim(), group: grp.get(s.category_id) ?? 'accounting' };
+  }).sort((a, b) => (GROUP_ORDER[a.group] - GROUP_ORDER[b.group]) || a.en.localeCompare(b.en, 'en', { sensitivity: 'base' }));
   return {
-    SOFTWARE: sw.filter((s) => liveCat.has(s.category_id)).map((s) => ({ id: s.id, ar: s.display_name || s.name, en: s.display_name || s.name, group: grp.get(s.category_id) ?? 'accounting' })),
+    SOFTWARE: software,
     FUNCTIONS: fns,
-    DURATIONS: DURATIONS_V2, SIZES: SIZES_V2,
+    DURATIONS: DURATIONS_V2, SIZES: SIZES_V2, GOALS, RESOLVED, STOP_REASONS, LAST_USED,
     OPTIONS: {
       business_type: pick('business_type'), decision_maker: pick('decision_maker'), golive_time: pick('golive_time'),
       longer_than_told: pick('longer_than_told'), implementer: pick('implementer'), annual_cost: pick('annual_cost'),
@@ -86,7 +132,7 @@ export async function loadReviewCatalog() {
       cert_title: pick('cert_title'), cert_issuer: pick('cert_issuer'), project_type: pick('project_type'), project_role: pick('project_role'), industry: pick('industry'),
       professional_role: lk.roles, experience: lk.experience, expertise: lk.expertise, service: lk.services,
     },
-    COMPLIANCE_ROWS, COMPLIANCE_STATUS, INTEGRATION_SYSTEMS: SYSTEMS.filter((s) => s.code !== 'other'), INTEGRATION_OUTCOMES,
+    COMPLIANCE_ROWS: COMPLIANCE_ROWS_V2, COMPLIANCE_STATUS: COMPLIANCE_STATUS_V2, INTEGRATION_SYSTEMS: SYSTEMS.filter((s) => s.code !== 'other'), INTEGRATION_OUTCOMES,
     REJECT_REASONS: Object.fromEntries(reasons.map((r) => [r.code, { en: r.name_en, ar: r.name_ar }])),
   };
 }
@@ -111,10 +157,14 @@ function sanitizeAnswers(raw: unknown, lk: Awaited<ReturnType<typeof lookups>>, 
   })).filter((x) => x.name || x.purpose || x.outcome || x.experience);
   const rate = (v: unknown, allowUnrated: boolean) => (allowUnrated && v === 'unrated' ? 'unrated' : rating(v) ? String(rating(v)) : '');
   const role = txt(a.role, 120);
+  const stillCode = one(a.still_using, group('still_using'));
+  const noOpt = lk.options.find((o) => o.group_code === 'still_using' && o.code === stillCode);
+  const stopped = !!noOpt && (noOpt.ar.trim() === 'لا' || /^no\b/i.test(noOpt.en.trim()));
   return {
+    stopped,
     software: isUuid(txt(a.software, 60)) ? txt(a.software, 60) : a.software === 'custom' ? 'custom' : '',
     custom_name: txt(a.custom_name, 120), custom_group: g,
-    role: roleSet.has(role) ? role : role,
+    role: roleSet.has(role) ? role : '',
     duration: one(a.duration, codesOf(DURATIONS_V2)),
     functions: fnPicked, functions_other: txt(a.functions_other, 120),
     business_type: one(a.business_type, group('business_type')), business_name: txt(a.business_name, 120),
@@ -123,9 +173,19 @@ function sanitizeAnswers(raw: unknown, lk: Awaited<ReturnType<typeof lookups>>, 
     golive_time: one(a.golive_time, group('golive_time')), longer_than_told: one(a.longer_than_told, group('longer_than_told')),
     implementer: one(a.implementer, group('implementer')),
     integrations, no_integrations: a.no_integrations === true && integrations.length === 0,
-    compliance: comp, difficulty: txt(a.difficulty, 2000), wishlist: txt(a.wishlist, 2000), who_not_buy: txt(a.who_not_buy, 2000),
+    compliance: comp, who_not_buy: txt(a.who_not_buy, 2000),
     annual_cost: one(a.annual_cost, group('annual_cost')), previous_software: txt(a.previous_software, 120),
-    still_using: one(a.still_using, group('still_using')), moved_to: txt(a.moved_to, 120), moved_reason: txt(a.moved_reason, 2000),
+    still_using: stillCode, moved_to: stopped ? txt(a.moved_to, 120) : '',
+    // 19 Nov questions (stored together in the "extra" column)
+    main_goals: [...new Set(arr(a.main_goals).map((x) => txt(x, 40)).filter((x) => GOAL_SET.has(x)))].slice(0, 3), main_goal_other: txt(a.main_goal_other, 120),
+    accomplished: txt(a.accomplished, 2000),
+    no_problems: a.no_problems === true, problem: a.no_problems === true ? '' : txt(a.problem, 2000),
+    problem_resolved: a.no_problems === true ? '' : (RESOLVED_SET.has(txt(a.problem_resolved, 20)) ? txt(a.problem_resolved, 20) : ''),
+    problem_how: a.no_problems === true || a.problem_resolved === 'res_no' ? '' : txt(a.problem_how, 2000),
+    suits_sizes: [...new Set(arr(a.suits_sizes).map((x) => txt(x, 40)).filter((x) => codesOf(SIZES_V2).has(x)))],
+    suits_types: [...new Set(arr(a.suits_types).map((x) => txt(x, 60)).filter((x) => group('business_type').has(x)))], suits_why: txt(a.suits_why, 2000),
+    stop_reasons: stopped ? [...new Set(arr(a.stop_reasons).map((x) => txt(x, 40)).filter((x) => STOP_SET.has(x)))] : [],
+    stop_other: stopped ? txt(a.stop_other, 120) : '', last_used: stopped ? one(a.last_used, LAST_SET) : '',
     overall: rate(a.overall, false), ease: rate(a.ease, false), support: rate(a.support, true), value: rate(a.value, true),
     choose_again: one(a.choose_again, group('would_choose_again')), recommend: one(a.recommend, group('recommend')),
     relationship: one(a.relationship, group('relationship')), relationship_detail: txt(a.relationship_detail, 600),
@@ -135,52 +195,70 @@ function sanitizeAnswers(raw: unknown, lk: Awaited<ReturnType<typeof lookups>>, 
 
 /** Validation for SUBMIT. Returns { field: code }. Only REQUIRED fields that are missing or invalid are reported. */
 export function validateForSubmit(a: Answers, fns: Record<FnGroup, Opt[]>, softwareKnown: boolean): Record<string, string> {
+  void fns;
   const e: Record<string, string> = {};
   const short = (field: string, v: string, emptyCode = 'required') => { if (!v) e[field] = emptyCode; else if (badShort(v)) e[field] = 'short'; };
   // step 1
   if (!softwareKnown && a.software !== 'custom') e.software = 'software';
   if (a.software === 'custom') short('custom_name', a.custom_name, 'software');
-  short('role', a.role, 'role');
+  if (!a.role) e.role = 'role';
   if (!a.duration) e.duration = 'duration';
   if (!a.functions.length) e.functions = 'functions';
   else if (a.functions.includes('other') && !a.functions_other) e.functions_other = 'other_fn';
   else if (a.functions.includes('other') && badShort(a.functions_other)) e.functions_other = 'short';
   // step 2
-  if (!a.business_type) e.business_type = 'required';
-  short('business_name', a.business_name);
-  if (!a.company_size) e.company_size = 'required';
-  if (!a.deciders.length) e.deciders = 'required';
-  if (!a.golive_time) e.golive_time = 'required';
-  if (!a.longer_than_told) e.longer_than_told = 'required';
+  if (!a.main_goals.length) e.main_goals = 'goal';
+  else if (a.main_goals.includes('other')) { if (!a.main_goal_other) e.main_goal_other = 'goal_other'; else if (badShort(a.main_goal_other)) e.main_goal_other = 'short'; }
+  if (!a.business_type) e.business_type = 'btype';
+  short('business_name', a.business_name, 'bname');
+  if (!a.company_size) e.company_size = 'size';
+  if (!a.deciders.length) e.deciders = 'deciders';
+  if (!a.golive_time) e.golive_time = 'golive';
+  if (!a.longer_than_told) e.longer_than_told = 'longer';
   if (!a.no_integrations) {
-    if (!a.integrations.length) e.integrations = 'int_none';
+    if (!a.integrations.length) e.integrations = 'int_purpose';
     a.integrations.forEach((x: Row, i: number) => {
       if (x.name && badShort(x.name)) e[`integrations.${i}.name`] = 'short';
-      if (!x.name) e[`integrations.${i}.name`] = 'required';
+      if (!x.name) e[`integrations.${i}.name`] = 'int_name';
       if (!x.purpose) e[`integrations.${i}.purpose`] = 'int_purpose'; else if (badShort(x.purpose)) e[`integrations.${i}.purpose`] = 'short';
       if (!x.outcome) e[`integrations.${i}.outcome`] = 'int_status';
     });
   }
-  if (COMPLIANCE_ROWS.some((r) => !a.compliance[r.code])) e.compliance = 'compliance';
-  if (a.wishlist.length < 30) e.wishlist = 'min30';
-  if (a.who_not_buy.length < 30) e.who_not_buy = 'min30';
-  if (!a.annual_cost) e.annual_cost = 'required';
-  short('previous_software', a.previous_software);
-  if (!a.still_using) e.still_using = 'required';
-  if (a.moved_to && badShort(a.moved_to)) e.moved_to = 'short';
   // step 3
+  if (COMPLIANCE_ROWS.some((r) => !a.compliance[r.code])) e.compliance = 'compliance';
+  if (a.accomplished.length < 30) e.accomplished = 'min30';
+  if (!a.no_problems) {
+    if (!a.problem) e.problem = 'problem'; else if (a.problem.length < 30) e.problem = 'min30';
+    if (!a.problem_resolved) e.problem_resolved = 'resolved';
+  }
+  if (!a.suits_sizes.length || !a.suits_types.length) e.suits = 'suits';
+  if (a.who_not_buy.length < 30) e.who_not_buy = 'min30';
+  if (!a.annual_cost) e.annual_cost = 'cost';
+  short('previous_software', a.previous_software, 'prev');
+  if (!a.still_using) e.still_using = 'still';
+  else if (a.stopped) {
+    if (!a.stop_reasons.length) e.stop_reasons = 'stop';
+    else if (a.stop_reasons.includes('other')) { if (!a.stop_other) e.stop_other = 'goal_other'; else if (badShort(a.stop_other)) e.stop_other = 'short'; }
+    if (!a.last_used) e.last_used = 'lastused';
+  }
+  if (a.moved_to && badShort(a.moved_to)) e.moved_to = 'short';
+  // step 4
   if (!a.overall || !a.ease || !a.support || !a.value) e.ratings = 'ratings';
-  if (!a.choose_again) e.choose_again = 'required';
-  if (!a.recommend) e.recommend = 'required';
-  if (!a.relationship) e.relationship = 'required';
+  if (!a.choose_again) e.choose_again = 'again';
+  if (!a.recommend) e.recommend = 'recommend';
+  if (!a.relationship) e.relationship = 'rel';
   else if (a.relationship !== 'rel_none' && a.relationship_detail.length < 10) e.relationship_detail = 'min10';
   if (!a.declaration) e.declaration = 'declaration';
   return e;
 }
 
-function answersToRow(a: Answers): Row {
+const EXTRA_KEYS = ['main_goals', 'main_goal_other', 'accomplished', 'no_problems', 'problem_resolved', 'problem_how', 'suits_sizes', 'suits_types', 'suits_why', 'stop_reasons', 'stop_other', 'last_used'] as const;
+
+function answersToRow(a: Answers, step: number): Row {
   const c = (k: string) => nul(a[k] ?? '');
   const rate = (v: string) => (v && v !== 'unrated' ? Number(v) : null);
+  const extra: Row = { v: 2, step };
+  for (const k of EXTRA_KEYS) extra[k] = a[k];
   return {
     custom_software_name: a.software === 'custom' ? c('custom_name') : null,
     custom_function_group: a.software === 'custom' ? a.custom_group : null,
@@ -190,30 +268,36 @@ function answersToRow(a: Answers): Row {
     decision_maker_codes: a.deciders, decision_maker_code: a.deciders[0] ?? null,
     golive_time_code: c('golive_time'), longer_than_told_code: c('longer_than_told'), implementer_code: c('implementer'),
     integrations: a.integrations, no_integrations: a.no_integrations,
-    compliance: a.compliance, biggest_difficulty: c('difficulty'), wishlist: c('wishlist'), who_should_not_buy: c('who_not_buy'),
+    compliance: a.compliance, biggest_difficulty: c('problem'), wishlist: null, who_should_not_buy: c('who_not_buy'),
     annual_cost_code: c('annual_cost'), previous_software: c('previous_software'), still_using_code: c('still_using'),
-    moved_to_software: c('moved_to'), moved_to_reason: c('moved_reason'),
+    moved_to_software: c('moved_to'), moved_to_reason: null,
     overall_rating: rate(a.overall), ease_rating: rate(a.ease),
     support_rating: rate(a.support), support_unrated: a.support === 'unrated',
     value_rating: rate(a.value), value_unrated: a.value === 'unrated',
     would_choose_again_code: c('choose_again'), recommended_code: c('recommend'),
     relationship_code: c('relationship'), relationship_detail: c('relationship_detail'),
     declaration_confirmed: a.declaration, anonymous: a.anonymous,
+    extra,
   };
 }
 
 function rowToAnswers(r: Row): Answers {
   const s = (v: unknown) => (v == null ? '' : String(v));
   const rt = (n: unknown, unrated: unknown) => (unrated ? 'unrated' : n == null ? '' : String(n));
+  const x = obj(r.extra);
   return {
     software: r.software_id ?? (r.custom_software_name ? 'custom' : ''), custom_name: s(r.custom_software_name), custom_group: s(r.custom_function_group),
     role: s(r.role_when_used), duration: s(r.usage_duration_code), functions: arr(r.features_used), functions_other: s(r.features_other),
     business_type: s(r.business_type_code), business_name: s(r.lead_company), company_size: s(r.company_size_code),
     deciders: arr(r.decision_maker_codes), golive_time: s(r.golive_time_code), longer_than_told: s(r.longer_than_told_code), implementer: s(r.implementer_code),
     integrations: arr(r.integrations), no_integrations: !!r.no_integrations,
-    compliance: obj(r.compliance), difficulty: s(r.biggest_difficulty), wishlist: s(r.wishlist), who_not_buy: s(r.who_should_not_buy),
+    compliance: obj(r.compliance), who_not_buy: s(r.who_should_not_buy),
+    problem: s(r.biggest_difficulty),
     annual_cost: s(r.annual_cost_code), previous_software: s(r.previous_software), still_using: s(r.still_using_code),
-    moved_to: s(r.moved_to_software), moved_reason: s(r.moved_to_reason),
+    moved_to: s(r.moved_to_software),
+    main_goals: arr(x.main_goals), main_goal_other: s(x.main_goal_other), accomplished: s(x.accomplished), no_problems: x.no_problems === true,
+    problem_resolved: s(x.problem_resolved), problem_how: s(x.problem_how), suits_sizes: arr(x.suits_sizes), suits_types: arr(x.suits_types), suits_why: s(x.suits_why),
+    stop_reasons: arr(x.stop_reasons), stop_other: s(x.stop_other), last_used: s(x.last_used),
     overall: rt(r.overall_rating, false), ease: rt(r.ease_rating, false), support: rt(r.support_rating, r.support_unrated), value: rt(r.value_rating, r.value_unrated),
     choose_again: s(r.would_choose_again_code), recommend: s(r.recommended_code),
     relationship: s(r.relationship_code), relationship_detail: s(r.relationship_detail),
@@ -244,6 +328,14 @@ async function profileId(user: CurrentUser, lang: 'en' | 'ar', create: boolean):
   return ins.id as string;
 }
 
+/** Journey step 1..4. Drafts saved before the 19 Nov change have no extra.v: their old step 3 (ratings) is now step 4. */
+function reviewStep(r: Row): number {
+  const x = obj(r.extra);
+  if (x.v === 2 && Number(x.step) >= 1) return Math.min(4, Number(x.step));
+  const old = Number(r.current_step) || 1;
+  return old >= 3 ? 4 : old;
+}
+
 export async function loadMyReviews(user: CurrentUser): Promise<ReviewDTO[]> {
   const pid = await profileId(user, 'ar', false);
   if (!pid) return [];
@@ -257,7 +349,7 @@ export async function loadMyReviews(user: CurrentUser): Promise<ReviewDTO[]> {
   const why = new Map<string, Row>(reasons.map((r) => [r.code, r]));
   return ((rows ?? []) as Row[]).map((r): ReviewDTO => ({
     id: r.id, status: (['draft', 'pending', 'approved', 'rejected'].includes(r.status) ? r.status : 'draft') as ReviewDTO['status'],
-    step: Number(r.current_step) || 1, answers: rowToAnswers(r),
+    step: reviewStep(r), answers: rowToAnswers(r),
     software_name: (r.software_id && name.get(r.software_id)) || r.custom_software_name || '',
     reject_reason: r.status === 'rejected' && r.reject_reason_code && why.get(r.reject_reason_code)
       ? { en: why.get(r.reject_reason_code)!.name_en, ar: why.get(r.reject_reason_code)!.name_ar } : null,
@@ -300,34 +392,52 @@ export async function saveReview(user: CurrentUser, body: unknown): Promise<Save
 
   const pid = (await profileId(user, lang, true))!;
 
-  // existing review for this person + product (by id first, then by product)
+  // existing review for this person + product (by id first, then by product). Never two reviews of one product for one person.
   const wanted = txt(b.id, 60);
   let existing: Row | null = null;
   if (isUuid(wanted)) {
     const { data } = await db().from('rv_expert_software_reviews').select('*').eq('id', wanted).eq('profile_id', pid).maybeSingle();
     existing = data ?? null;
   }
-  if (!existing) {
+  const wantedRow = existing;
+  {
     const q = db().from('rv_expert_software_reviews').select('*').eq('profile_id', pid);
-    const { data } = isUuid(rawSoftware) ? await q.eq('software_id', rawSoftware).maybeSingle() : await q.ilike('custom_software_name', a.custom_name.replace(/[%_\\]/g, (m: string) => '\\' + m)).maybeSingle();
-    existing = data ?? null;
+    const { data: same } = isUuid(rawSoftware)
+      ? await q.eq('software_id', rawSoftware).order('updated_at', { ascending: false })
+      : await q.ilike('custom_software_name', a.custom_name.replace(/[%_\\]/g, (m: string) => '\\' + m)).order('updated_at', { ascending: false });
+    const rows = (same ?? []) as Row[];
+    // a submitted / approved review of this product always wins; otherwise the draft the screen asked for, then the newest one
+    const locked = rows.find((r) => r.status === 'pending' || r.status === 'approved');
+    const pick = locked ?? rows.find((r) => r.id === wantedRow?.id) ?? rows[0] ?? null;
+    if (pick && wantedRow && pick.id !== wantedRow.id && !locked) {
+      throw new ExpertInputError(lang === 'ar' ? 'سبق أن بدأت مراجعة لهذا النظام.' : 'You already have a review for this software.');
+    }
+    if (pick) existing = pick;
   }
   if (existing && (existing.status === 'pending' || existing.status === 'approved')) {
     throw new ExpertInputError(lang === 'ar' ? 'سبق أن أرسلت مراجعة لهذا النظام.' : 'You already submitted a review for this software.');
   }
-  // a review already exists for the product chosen by a DIFFERENT row of the same person
-  if (existing && isUuid(wanted) && existing.id !== wanted) throw new ExpertInputError(lang === 'ar' ? 'سبق أن بدأت مراجعة لهذا النظام.' : 'You already have a review for this software.');
-
-  const base = answersToRow(a);
+  const step = Math.min(4, Math.max(1, Number(b.step) || 1));
+  let answers = a;
+  // an existing draft is opened and only NEW (non-empty) answers are copied into it
+  if (existing && !wantedRow) {
+    const old = rowToAnswers(existing);
+    answers = { ...a };
+    for (const k of Object.keys(old)) {
+      const nv = (a as Row)[k], ov = old[k];
+      const empty = nv == null || nv === '' || nv === false || (Array.isArray(nv) && nv.length === 0) || (typeof nv === 'object' && !Array.isArray(nv) && Object.keys(nv).length === 0);
+      if (empty) (answers as Row)[k] = ov;
+    }
+  }
+  const base = answersToRow(answers, step);
   const now = new Date().toISOString();
-  const step = Math.min(3, Math.max(1, Number(b.step) || 1));
-  const row: Row = { ...base, software_id: isUuid(rawSoftware) ? rawSoftware : null, current_step: step, updated_at: now };
+  const row: Row = { ...base, software_id: isUuid(rawSoftware) ? rawSoftware : null, current_step: Math.min(3, step), updated_at: now };
 
   if (submit) {
-    const errors = validateForSubmit(a, fns, !!softwareGroup);
+    const errors = validateForSubmit(answers, fns, !!softwareGroup);
     if (Object.keys(errors).length) return { ok: false, errors };
-    const allFns = (softwareGroup ?? a.custom_group) && fns[(softwareGroup ?? a.custom_group) as FnGroup].map((o) => o.code);
-    const everything = !!allFns && allFns.length > 0 && allFns.every((c: string) => a.functions.includes(c));
+    const allFns = (softwareGroup ?? answers.custom_group) && fns[(softwareGroup ?? answers.custom_group) as FnGroup].map((o) => o.code);
+    const everything = !!allFns && allFns.length > 0 && allFns.every((c: string) => answers.functions.includes(c));
     const extreme = extremeRatings([row.overall_rating, row.ease_rating, row.support_rating, row.value_rating]);
     const { updated_at: _u, ...contentOnly } = row; void _u;
     Object.assign(row, {
@@ -336,6 +446,7 @@ export async function saveReview(user: CurrentUser, body: unknown): Promise<Save
       reviewed_by: null, reviewed_at: null, reject_reason_code: null, submitted_at: now, current_step: 3,
       content_sig: createHash('sha256').update(JSON.stringify(contentOnly)).digest('hex'),
     });
+    row.extra = { ...(row.extra as Row), step: 4 };
   } else {
     // a rejected review stays "Rejected" (with its reason) until it is resubmitted
     row.status = existing?.status === 'rejected' ? 'rejected' : 'draft';

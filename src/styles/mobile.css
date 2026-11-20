@@ -1,0 +1,198 @@
+/* =====================================================================================================
+   mobile.css - the ONE phone stylesheet for every public page (added 2026-11-18)
+
+   - Imported once, in app/layout.tsx, so it reaches all pages: /review, /products, /product/<slug>, /profilepage/<slug>,
+     /compare, /tech-stack, /request-demo, /contact-vendor, /login, /register, /privacy, /verification.
+   - Everything is inside @media (max-width: 720px): a screen wider than that (laptop, desktop) is NOT changed at all.
+   - Pages written with global classes (globals.css) are styled by those classes.
+     Pages written with CSS modules (profile.module.css, compare.module.css) are styled through the stable hook classes
+     that the markup carries beside the module class:  mp-*  = the shared top bar,  mc-*  = the compare page.
+     (Module class names are generated and can change, hook classes never do.)
+   - "html body" in front of the hook selectors makes them stronger than the module rules, whatever the order the files load in.
+   - To fix something on a phone: add the rule here, in the section of that page. Do not add phone rules in the page CSS files.
+   ===================================================================================================== */
+
+/* the 3-dot menu button is for phones only (the phone rules below show it) */
+.mp-more { display: none; }
+
+@media (max-width: 720px) {
+
+  /* ---------- 1. every page ---------- */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { overflow-x: hidden; }
+  img, svg, video, canvas { max-width: 100%; }
+  input, select, textarea { font-size: 16px; }              /* iPhone Safari zooms the page when a field is smaller than 16px */
+
+  /* ---------- 2. pages that use global classes (review, products, product, forms, login) ---------- */
+  .topbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+  .topbar-right { gap: 8px; }
+  .menu-pop { min-width: 0; width: min(92vw, 280px); }
+  .page { padding: 18px 14px 56px; }
+  .prod { padding-inline: 14px; }
+  .title { font-size: 22px; line-height: 1.25; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .tiles { gap: 10px; }
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters select { width: 100%; }
+  .btn-primary, .btn-ghost, .btn-demo { min-height: 44px; }
+  .login-wrap { padding: 16px 12px; }
+  .login-card { padding: 20px 16px; }
+  .footer { padding-inline: 14px; }
+  .footer .inner { flex-direction: column; gap: 10px; }
+
+  /* ---------- 3. shared top bar (profile page and compare page) ----------
+     row 1: logo + language + account + 3-dot menu button (Products, Solutions, Resources, About Us are inside it)   row 2: search */
+  html body .mp-topbar { flex-wrap: wrap; gap: 12px 10px; }
+  html body .mp-brand { order: 1; }
+  html body .mp-topEnd { order: 2; margin-inline-start: auto; gap: 10px; }
+  html body .mp-topnav { display: none; }
+  html body .mp-search { order: 3; flex-basis: 100%; max-width: none; width: auto; margin-inline-start: 0; }
+
+  html body .mp-more { display: block; position: relative; }
+  html body .mp-moreBtn { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--navy); cursor: pointer; }
+  html body .mp-morePop { position: absolute; top: calc(100% + 8px); inset-inline-end: 0; z-index: 80; min-width: 200px; display: grid; gap: 2px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 34px rgba(11, 28, 51, .16); }
+  html body .mp-morePop a, html body .mp-moreOff { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 9px; font-size: 15px; font-weight: 500; color: var(--text); }
+  html body .mp-morePop a:active { background: #f3eedd; }
+  html body .mp-moreOff { opacity: .6; cursor: default; }
+  html body .mp-moreOff small { font-size: 11px; font-weight: 700; color: var(--gold-ink); background: var(--gold); border-radius: 999px; padding: 1px 8px; }
+
+  /* ---------- 4. Compare page ----------
+     No sideways table. The product cards sit in a 2-column list, and every row is a small card:
+     the label on top, then one line per product (letter + name + its value). */
+  html body .mc-hero { padding: 20px; flex-direction: column; align-items: flex-start; }
+  html body .mc-hero h1 { font-size: 26px; }
+  html body .mc-heroArt { display: none; }
+  html body .mc-toolbar { gap: 8px; }
+  html body .mc-insights { padding: 16px; }
+  html body .mc-insights ul { grid-template-columns: minmax(0, 1fr); }
+  html body .mc-navBtn { padding: 8px 12px; font-size: 14px; }
+  html body .mc-sec { min-width: 0; scroll-margin-top: 70px; }
+
+  html body .mc-scroller { overflow-x: visible; padding-bottom: 0; }
+  html body .mc-head, html body .mc-row, html body .mc-actions, html body .mc-miniHead { min-width: 0; }
+  html body .mc-head { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 6px 0 12px; position: static; background: none; }
+  html body .mc-head .mc-headLabel, html body .mc-actions .mc-headLabel, html body .mc-miniHead { display: none; }
+  html body .mc-pCard { margin-inline: 0; min-width: 0; padding: 12px 10px 10px; }
+  html body .mc-pTop { gap: 8px; padding-inline-end: 12px; }
+  html body .mc-pName { font-size: 14.5px; overflow-wrap: anywhere; }
+  html body .mc-pMeta { gap: 6px; }
+
+  html body .mc-secHead, html body .mc-basis, html body .mc-secNote, html body .mc-moreWrap, html body .mc-allSame { position: static; width: auto; }
+  html body .mc-secHead { padding: 14px 16px; }
+  html body .mc-basis { padding: 0 16px 12px; }
+  html body .mc-secNote { padding: 12px 16px 16px; }
+  html body .mc-moreWrap { padding: 12px 16px 0; }
+
+  html body .mc-row { display: block; padding: 12px 14px; }
+  html body .mc-rLabel { position: static; padding: 0 0 8px; font-size: 14.5px; background: none; }
+  html body .mc-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 9px 4px; border-inline-start: 0; border-top: 1px dashed var(--line); font-size: 14px; }
+  html body .mc-rLabel + .mc-cell { border-top: 0; }
+  html body .mc-cell.mc-best { padding-inline: 10px; border-radius: 10px; border-top-color: transparent; }
+  html body .mc-cell > .mc-who { display: flex; align-items: center; gap: 8px; flex: 0 0 36%; max-width: 36%; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--navy); }
+  html body .mc-who em { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  html body .mc-cell > :not(.mc-who):not(.mc-bestTag) { flex: 1 1 0; min-width: 0; }
+  html body .mc-cell > .mc-bestTag { flex: none; margin-inline-start: auto; }
+  html body .mc-cell .mc-planList, html body .mc-cell .mc-fit { flex-basis: 100%; }
+
+  html body .mc-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  html body .mc-actCell { padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  html body .mc-actCell > .mc-who { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--navy); }
+
+  /* ---------- 5. Profile page: section tabs as boxes ----------
+     The tabs become a grid of boxes. Tapping a box shows only that section (the tab bar is not sticky on a phone because it is tall). */
+  html body .mp-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; overflow: visible; position: static; }
+  html body .mp-tab { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 14.5px; white-space: normal; text-align: start; }
+  html body .mp-tab > span:first-of-type { min-width: 0; overflow-wrap: anywhere; }
+  html body .mp-tab > span:last-child:not(:first-of-type) { margin-inline-start: auto; }
+  html body .mp-tab[aria-current="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+  /* ---------- 6. Mobile design concept (added 2026-11-19) ----------
+     Matches Nexiz_AI Mobile design concept PDF. Phone only: nothing outside this media query changes. */
+
+  /* 6a. Profile page: tabs become one row of pills that scrolls sideways (replaces the 2-column boxes of section 5) */
+  html body .mp-tabs { display: flex; flex-wrap: nowrap; gap: 8px; padding: 4px 14px 10px; overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  html body .mp-tabs::-webkit-scrollbar { display: none; }
+  html body .mp-tab { flex: 0 0 auto; min-height: 40px; padding: 8px 16px; border-radius: 999px; white-space: nowrap; scroll-snap-align: start; font-size: 14px; }
+  html body .mp-tab > svg { display: none; }                       /* pills show the label only, like the design */
+
+  /* 6b. Profile page: bottom bar on a phone = Contact Vendor (navy, left) + Request a Demo (orange, right).
+     Both are fixed to the bottom of the screen. The vendor menu opens upwards. */
+  html body .mp-cols { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  html body .mp-cols::after { content: ""; position: fixed; inset-inline: 0; bottom: 0; height: calc(76px + env(safe-area-inset-bottom, 0px)); background: #FAF8F3; border-top: 1px solid #E8E4DA; z-index: 55; pointer-events: none; }
+  html body .mp-cols .btn-demo.wide { position: fixed; inset-inline-start: calc(42vw + 4px); inset-inline-end: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: auto; margin: 0; z-index: 60;
+    min-height: 52px; padding: 0 8px; font-size: 15px; font-weight: 600; background: #D9541E; border-radius: 12px; }
+  html body .mp-cols .btn-demo.wide:active { background: #B94316; }
+  html body .mp-cols .vendor-dd { position: fixed; inset-inline-start: 12px; width: calc(42vw - 16px); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); margin: 0; z-index: 60; }
+  html body .mp-cols .vendor-dd > .btn-vendor { min-height: 52px; padding: 0 6px; font-size: 13px; font-weight: 600; background: #0B1F3A; border-radius: 12px; }
+  html body .mp-cols .vendor-menu { position: absolute; bottom: calc(100% + 8px); inset-inline-start: 0; width: min(80vw, 270px); margin: 0; box-shadow: 0 14px 34px rgba(11, 28, 51, .16); }
+  html body .mp-cols .vendor-menu button { padding: 14px 16px; font-size: 15px; }
+
+  /* 6c. Compare page: when exactly 2 products are chosen, show them side by side (A | B) like the design.
+     Rows with 3 to 5 products keep the stacked list from section 4. */
+  html body .mc-row:has(.mc-cell:nth-child(3)):not(:has(.mc-cell:nth-child(4))) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; overflow: hidden; }
+  html body .mc-row:has(.mc-cell:nth-child(3)):not(:has(.mc-cell:nth-child(4))) .mc-rLabel { grid-column: 1 / -1; text-align: center; padding: 8px 10px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); }
+  html body .mc-row:has(.mc-cell:nth-child(3)):not(:has(.mc-cell:nth-child(4))) .mc-cell { display: block; padding: 12px 12px; border-top: 0; border-radius: 0; font-size: 15px; font-weight: 600; color: var(--navy); }
+  html body .mc-row:has(.mc-cell:nth-child(3)):not(:has(.mc-cell:nth-child(4))) .mc-cell + .mc-cell { border-inline-start: 1px solid var(--line); }
+  html body .mc-row:has(.mc-cell:nth-child(3)):not(:has(.mc-cell:nth-child(4))) .mc-cell > .mc-who { display: none; }   /* names are already in the two cards on top */
+  html body .mc-row:has(.mc-cell:nth-child(3)):not(:has(.mc-cell:nth-child(4))) .mc-cell > .mc-bestTag { display: inline-block; margin-inline-start: 6px; }
+  html body .mc-cell.mc-best { background: #F6EBC8; }
+
+  /* 6d. Compare page: section buttons scroll sideways as pills instead of wrapping */
+  html body .mc-toolbar :has(> .mc-navBtn) { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px; scrollbar-width: none; }
+  html body .mc-navBtn { flex: 0 0 auto; border-radius: 999px; white-space: nowrap; min-height: 40px; }
+
+  /* 6f. Profile page top: compact header like the design (small logo beside the name, 3 stat boxes, price row) */
+  html body .mp-crumbs { display: none; }                          /* the Back button is enough on a phone */
+  html body .mp-heroMain { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 2px 12px; align-items: center; }
+  html body .mp-logo { grid-row: span 2; width: 56px; height: 56px; border-radius: 14px; }
+  html body .mp-logo img, html body .mp-logo .ent-fallback { width: 40px !important; height: 40px !important; font-size: 18px !important; }
+  html body .mp-htext { display: contents; }
+  html body .mp-h1 { font-size: 22px; line-height: 1.2; align-self: end; }
+  html body .mp-cat { margin: 0; font-size: 13px; color: var(--muted); align-self: start; }
+  html body .mp-desc { grid-column: 1 / -1; margin-top: 10px; font-size: 14px; -webkit-line-clamp: 3; }
+  html body .mp-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+  html body .mp-stat { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 10px; min-height: 0; border: 0; border-radius: 12px; background: #F6F4EE; white-space: normal; }
+  html body .mp-stat > svg { display: none; }
+  html body .mp-stat small { font-size: 11px; }
+  html body .mp-stat:has(> div > small:first-child) { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; background: none; padding: 4px 2px 0; }
+  html body .mp-stat:has(> div > small:first-child) > div { display: flex; width: 100%; justify-content: space-between; align-items: center; }
+  html body .mp-fit { padding: 16px; gap: 10px; }
+  html body .mp-fitArt { display: none; }
+
+  /* ---------- 7. Other pages (added 2026-11-19) ---------- */
+
+  /* 7a. Every pop-up (Request a Demo, Contact Vendor, Compare picker) becomes a bottom sheet on a phone.
+     The demo and vendor pop-ups have inline styles, so these rules need !important. */
+  html body [role="dialog"][aria-modal="true"] { align-items: flex-end !important; padding: 0 !important; }
+  html body [role="dialog"][aria-modal="true"] > div { width: 100% !important; max-width: none !important; height: 88dvh !important; max-height: 88dvh !important;
+    border-radius: 20px 20px 0 0 !important; padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* 7b. Forms (Request a Demo, Contact Vendor, login, register): roomy fields, one big button that stays at the bottom */
+  html body .login-wrap { padding: 12px; place-items: start center; }
+  html body .login-card { padding: 18px 16px; border-radius: 16px; gap: 14px; }
+  html body .login-card input:not([type="checkbox"]), html body .login-card select { min-height: 46px; }
+  html body .login-card .btn-demo.wide, html body .login-card .btn-vendor.wide { position: sticky; bottom: 0; min-height: 52px; font-size: 16px; font-weight: 600; border-radius: 12px; }
+  html body .login-card .btn-demo.wide { background: #D9541E; }
+
+  /* 7c. Products list: each product is one row (logo, name, reviews) instead of a tile, and the search box stays on top */
+  html body .prod .tiles { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  html body .prod .tile { flex-direction: row; align-items: center; text-align: start; padding: 12px 14px; gap: 12px; }
+  html body .prod .tile-name { flex: 1; min-width: 0; font-size: 15px; }
+  html body .prod .tile .fig { margin-inline-start: auto; white-space: nowrap; }
+  html body .prod .search { position: sticky; top: 55px; z-index: 14; margin: 10px 0; }
+  html body .prod .blk h2 { font-size: 17px; }
+
+  /* 6g. Profile page: all sections stay on the page one below the other. The tab bar sticks to the top and its highlight follows the scroll
+     (ProfileTabs.tsx does the following, phone only). */
+  html body .mp-tabs { position: sticky; top: 0; z-index: 40; margin: 0 -16px 12px; padding: 8px 16px; background: #FAF8F3; border: 0; border-bottom: 1px solid #E8E4DA; border-radius: 0; }
+  html body .mp-main > [id] { scroll-margin-top: 72px; }
+
+  /* 7d. Compare picker sheet: the profile page's mobile rule ".search { order: 5 }" leaked in and pushed the search box under the Compare button.
+     Reset it inside pop-ups, and keep the order head, search, list, footer. */
+  html body [role="dialog"][aria-modal="true"] > div:has(> ul) > label { order: 0 !important; flex-basis: auto !important; width: auto !important; max-width: none !important; margin: 0 !important; }
+  html body [role="dialog"][aria-modal="true"] > div:has(> ul) { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 12px; padding-inline: 16px; }
+
+  /* 7e. Compare page: the tick is a small 22px circle everywhere (rule 4 had stretched it into a long oval when it sits straight in a cell) */
+  html body .mc-cell > [role="img"] { flex: 0 0 22px !important; width: 22px !important; max-width: 22px !important; height: 22px !important; border-radius: 50%; }
+}

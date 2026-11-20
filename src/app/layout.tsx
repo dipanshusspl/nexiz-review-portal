@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '@/styles/mobile.css';   // 2026-11-18: the one phone stylesheet for every public page
 import { Suspense } from 'react';
 import LoadingBar from '@/components/LoadingBar';
 import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';

@@ -89,6 +89,7 @@
 .secDesc { color: var(--muted); font-size: 13.5px; flex: 1; min-width: 160px; }
 .sameNote { font-size: 12.5px; font-weight: 600; color: var(--gold-ink); background: var(--gold); border-radius: 999px; padding: 2px 11px; }
 .miniHead { display: none; }
+.who { display: none; }   /* only the phone layout shows which product a value belongs to */
 .rows { border-top: 1px solid var(--line); }
 .row { border-bottom: 1px solid var(--line); }
 .row:last-child { border-bottom: 0; }
@@ -207,15 +208,6 @@
   .miniHead { display: grid; background: #fbfaf6; border-top: 1px solid var(--line); }
   .miniHead .miniItem { display: flex; align-items: center; gap: 6px; padding: 8px 10px; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--navy); }
   .miniHead .miniItem em { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .secHead { position: sticky; inset-inline-start: 0; width: min(100%, calc(100vw - 34px)); }
+  .secHead, .basis, .secNote, .moreWrap, .allSame { position: sticky; inset-inline-start: 0; width: min(100%, calc(100vw - 34px)); }   /* text stays inside the screen while the table slides */
 }
-@media (max-width: 720px) {
-  .root { --lab: 112px; --colmin: 156px; }
-  .hero { padding: 20px; flex-direction: column; align-items: flex-start; }
-  .hero h1 { font-size: 26px; }
-  .heroArt { width: 160px; }
-  .rLabel { padding: 12px; font-size: 13.5px; }
-  .toolbar { gap: 8px; }
-  .insights ul { grid-template-columns: minmax(0, 1fr); }
-  .sec { scroll-margin-top: 90px; }
-}
+/* phone layout (max-width 720px) lives in src/styles/mobile.css, the one root stylesheet for all public pages */

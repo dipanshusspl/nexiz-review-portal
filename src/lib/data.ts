@@ -3,7 +3,7 @@ import { db } from '@/lib/supabase/admin';
 import type { Lang } from '@/lib/i18n';
 
 export type Category = { id: string; slug: string; name_en: string; name_ar: string | null; image_url: string | null; sort_order: number; is_live: boolean; parent_id: string | null; live_override?: boolean };
-export type Software = { id: string; category_id: string; slug: string; name: string; display_name: string | null; website: string | null; description: string | null; image_url: string | null; sort_order: number };
+export type Software = { id: string; category_id: string; slug: string; name: string; display_name: string | null; name_ar?: string | null; website: string | null; description: string | null; image_url: string | null; sort_order: number };
 export type Review = {
   id: string; software_id: string; rating_overall: number; usage_duration: string;
   pros: string | null; cons: string | null; would_recommend: boolean | null;

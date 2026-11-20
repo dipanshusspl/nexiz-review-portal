@@ -11,6 +11,7 @@ import EntityImage from '@/components/EntityImage';
 import Footer from '@/components/Footer';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { getLang } from '@/lib/i18n';
+import { loadCatalog } from '@/lib/compare';
 import { loadProduct } from '@/lib/product';
 import { loadProfileExtras } from '@/lib/profile-extras';
 import { compareHref } from '@/lib/compare-pure';
@@ -22,7 +23,10 @@ import { FitIllustration, Ic } from './ProfileIcons';
 import ProfileTabs, { type Tab } from './ProfileTabs';
 import s from './profile.module.css';
 import VendorMenu from '@/components/VendorMenu';
+import NavMore from '@/components/NavMore';
+import SearchSuggest from '@/components/SearchSuggest';
 import DemoButton from '@/components/DemoButton';
+import { knownBusiness } from '@/lib/lead-profile';
 export const dynamic = 'force-dynamic';
 
 // These three buttons are in the design but the pages behind them are not built yet. While a value is null the button is shown greyed out
@@ -60,11 +64,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
     : { data: null };
   const catName = cat ? (lang === 'ar' ? cat.name_ar || cat.name_en : cat.name_en) : '';
   const name = (sw.display_name || sw.name) as string;
-  const [extras, user, prod] = await Promise.all([
+  const [extras, user, prod, catalog] = await Promise.all([
     loadProfileExtras(sw.id as string, lang),
     getCurrentUser().catch(() => null),
     loadProduct(slug, {}, lang).catch(() => null),
+    loadCatalog(lang).catch(() => []),   // for the search suggestions in the top bar
   ]);
+
+  // 2026-11-19: what the demo / contact pop-ups need, so they can open without asking the server
+
+  const me = user ? { name: user.fullName, email: user.email } : null;
+
+  const knownBiz = user ? Boolean(await knownBusiness(user.id).catch(() => null)) : false;
 
   const entry = entryPrice(extras.plans);
   const cycleWord = entry ? (entry.cycle === 'monthly' ? x.perMonth : x.perYear) : '';
@@ -93,87 +104,88 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
   const userP = prod?.userP ?? { count: 0, score: null };
   const expertP = prod?.expertP ?? { count: 0, score: null };
 
-  const has = { features: extras.features.length > 0, integrations: extras.integrations.length > 0, pricing: extras.plans.length > 0, saudi: extras.saudi.length > 0, alternatives: extras.alternatives.length > 0 };
+  const has = { features: extras.features.length > 0, integrations: extras.integrations.length > 0, pricing: extras.plans.length > 0, saudi: extras.saudi.length > 0, alternatives: extras.alternatives.length > 0, industries: extras.industries.length > 0 };
   const tabs: Tab[] = [
     { id: 'overview', label: b.overview, icon: 'home' },
     ...(has.features ? [{ id: 'features', label: lang === 'ar' ? 'الميزات' : 'Features', icon: 'list' as const }] : []),
     ...(has.integrations ? [{ id: 'integrations', label: b.integrations, icon: 'plug' as const, n: extras.integrations.length }] : []),
     ...(has.pricing ? [{ id: 'pricing', label: b.pricing, icon: 'tag' as const }] : []),
     ...(has.saudi ? [{ id: 'saudi', label: lang === 'ar' ? 'الامتثال' : 'Compliance', icon: 'shield' as const }] : []),
+    ...(has.industries ? [{ id: 'industries', label: b.industries, icon: 'chart' as const }] : []),
     ...(has.alternatives ? [{ id: 'alternatives', label: b.alternatives, icon: 'swap' as const }] : []),
     { id: 'reviews', label: b.reviews, icon: 'star' as const },
   ];
 
   return (
     <div className={s.page}>
-      <header className={s.topbar}>
-        <Link href="/review" className={s.brand}><span className={s.logo}>N</span>Nexiz AI</Link>
-        <nav className={s.topnav}>
+      <header className={`${s.topbar} mp-topbar`}>
+        <Link href="/review" className={`${s.brand} mp-brand`}><span className={s.logo}>N</span>Nexiz AI</Link>
+        <nav className={`${s.topnav} mp-topnav`}>
           <Link href="/products">{x.products}</Link>
           <span className={s.navOff} aria-disabled="true">{x.solutions}<small className={s.soonPlain}>{x.soon}</small></span>
           <span className={s.navOff} aria-disabled="true">{x.resources}<small className={s.soonPlain}>{x.soon}</small></span>
           <span className={s.navOff} aria-disabled="true">{x.about}<small className={s.soonPlain}>{x.soon}</small></span>   {/* Prachi 2026-11-14: the /about page is not built yet; swap back to <Link href="/about"> when it is */}
         </nav>
         {/* search goes to /products?q=...  (check that the list page reads q; change the action if the search lives elsewhere) */}
-        <form action="/products" method="get" role="search" className={s.search}>
+        <SearchSuggest items={catalog} lang={lang} placeholder={x.searchPh} className={`${s.search} mp-search`}>
           <Ic name="search" size={16} />
-          <input type="search" name="q" placeholder={x.searchPh} aria-label={x.searchPh} />
-        </form>
-        <div className={s.topEnd}>
+        </SearchSuggest>
+        <div className={`${s.topEnd} mp-topEnd`}>
           <form action={setLanguage}>
             <input type="hidden" name="to" value={`/profilepage/${slug}`} />
             <button name="lang" value={lang === 'ar' ? 'en' : 'ar'} className={s.langBtn}><Ic name="globe" size={17} />{lang === 'ar' ? 'English' : 'عربي'}</button>
           </form>
           <Link href={user ? '/review' : '/login'} className={s.userBtn} aria-label={user ? x.account : x.login} title={user ? x.account : x.login}><Ic name="user" size={18} /></Link>
+          <NavMore products={x.products} solutions={x.solutions} resources={x.resources} about={x.about} soon={x.soon} label={lang === 'ar' ? 'القائمة' : 'Menu'} />
         </div>
       </header>
 
       <div className={s.wrap} id="top">
         <div className={s.crumbRow}>
           <BackButton lang={lang} />
-          <div className={s.crumbs}>
+          <div className={`${s.crumbs} mp-crumbs`}>
             <Link href="/review">{x.software}</Link>
             {cat && <> / <Link href={`/review?category=${cat.slug}`}>{catName}</Link></>} / <b>{name}</b>
           </div>
         </div>
 
-        <section className={s.hero}>
-          <div className={s.heroMain}>
-            <div className={s.logoTile}><EntityImage url={sw.image_url} name={name} size={84} /></div>
-            <div className={s.heroText}>
-              <h1 className={s.h1}>{name}</h1>
-              {catName && <div className={s.heroCat}>{catName}</div>}
-              {(description || aiSummary) && <p className={s.heroDesc}>{description || aiSummary}</p>}   {/* Prachi 2026-11-14: hero shows the short overview; the AI summary sits in the Overview card */}
-              <div className={s.stats}>
-                <div className={s.stat}>
+        <section className={`${s.hero} mp-hero`}>
+          <div className={`${s.heroMain} mp-heroMain`}>
+            <div className={`${s.logoTile} mp-logo`}><EntityImage url={sw.image_url} name={name} size={84} /></div>
+            <div className={`${s.heroText} mp-htext`}>
+              <h1 className={`${s.h1} mp-h1`}>{name}</h1>
+              {catName && <div className={`${s.heroCat} mp-cat`}>{catName}</div>}
+              {(description || aiSummary) && <p className={`${s.heroDesc} mp-desc`}>{description || aiSummary}</p>}   {/* Prachi 2026-11-14: hero shows the short overview; the AI summary sits in the Overview card */}
+              <div className={`${s.stats} mp-stats`}>
+                <div className={`${s.stat} mp-stat`}>
                   <Ic name="star" size={22} className={s.starIc} />
                   <div>
                     <b className={s.statBig}>{userP.score !== null ? userP.score.toFixed(1) : '—'}</b>
                     <small>{total === 0 ? x.noReviews : userP.score !== null ? `(${total} ${total === 1 ? x.reviewWord : x.reviewsWord})` : x.ratingNone}</small>
                   </div>
                 </div>
-                {has.integrations && <div className={s.stat}><Ic name="grid" size={20} className={s.statIc} /><div><b className={s.statBig}>{extras.integrations.length}</b><small>{x.integrationsStat}</small></div></div>}
-                {has.features && <div className={s.stat}><Ic name="bolt" size={20} className={s.statIc} /><div><b className={s.statBig}>{extras.features.length}</b><small>{x.featuresStat}</small></div></div>}
-                {entry && <div className={s.stat}><Ic name="tag" size={20} className={s.statIc} /><div><small>{x.fromLabel}</small><b className={s.statMid}>{'\u2066'}{money(entry.amount)} {entry.currency}{'\u2069'} / {cycleWord}</b></div></div>}
+                {has.integrations && <div className={`${s.stat} mp-stat`}><Ic name="grid" size={20} className={s.statIc} /><div><b className={s.statBig}>{extras.integrations.length}</b><small>{x.integrationsStat}</small></div></div>}
+                {has.features && <div className={`${s.stat} mp-stat`}><Ic name="bolt" size={20} className={s.statIc} /><div><b className={s.statBig}>{extras.features.length}</b><small>{x.featuresStat}</small></div></div>}
+                {entry && <div className={`${s.stat} mp-stat`}><Ic name="tag" size={20} className={s.statIc} /><div><small>{x.fromLabel}</small><b className={s.statMid}>{'\u2066'}{money(entry.amount)} {entry.currency}{'\u2069'} / {cycleWord}</b></div></div>}
               </div>
             </div>
           </div>
 
-          <aside className={s.fit}>
+          <aside className={`${s.fit} mp-fit`}>
             <div className={s.fitText}>
               <span className={s.fitChip}><Ic name="spark" size={13} />{x.fitChip}</span>
               <h2 className={s.fitTitle}>{x.fitTitle}</h2>
               <p className={s.fitSub}>{x.fitSub}</p>
               <SoonLink href={ASSESSMENT_HREF} className={s.cta} soon={x.soon}>{x.fitCta}<Ic name="arrow" size={17} className={s.flip} /></SoonLink>
             </div>
-            <div className={s.fitArt}><FitIllustration /></div>
+            <div className={`${s.fitArt} mp-fitArt`}><FitIllustration /></div>
           </aside>
         </section>
 
         <ProfileTabs tabs={tabs} />
 
-        <div className={s.cols}>
-          <main className={s.mainCol}>
+        <div className={`${s.cols} mp-cols`}>
+          <main className={`${s.mainCol} mp-main`}>
             <OverviewCard lang={lang} description={aiSummary || description} extras={extras} />
             <FeaturesRow lang={lang} extras={extras} />
             <IntegrationsRow lang={lang} extras={extras} />
@@ -185,8 +197,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
           </main>
 {/* by prachi */}
           <aside className={s.side}>
-            <DemoButton slug={slug} lang={lang} />
-            <VendorMenu slug={slug} lang={lang} />
+            <DemoButton slug={slug} lang={lang} product={name} me={me} />
+            <VendorMenu slug={slug} lang={lang} product={name} me={me} knownBiz={knownBiz} />
             <section className={s.card}>
               <h2 className={s.sideTitle}><span className={s.tile}><Ic name="chart" size={19} /></span>{x.glance}</h2>
               <dl className={s.glance}>

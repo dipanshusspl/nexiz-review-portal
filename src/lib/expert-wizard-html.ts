@@ -7,7 +7,7 @@ export const EXPERT_WIZARD_HTML = String.raw`<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
 <meta name="color-scheme" content="light">
 <title>Nexiz</title>
 <style>
@@ -18,7 +18,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,san
 html[lang=ar] body{font-size:16px;line-height:28px}
 button,input,select,textarea{font:inherit;color:inherit}
 .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
-main{max-width:1280px;margin:0 auto;padding:18px 18px 60px}
+main{max-width:860px;margin:0 auto;padding:18px 18px 60px}
 .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
 .top h1{font-size:1.35rem;margin:0}
 .top .links{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -46,7 +46,10 @@ main{max-width:1280px;margin:0 auto;padding:18px 18px 60px}
 .bar>i{display:block;height:100%;background:var(--green);width:0}
 .two{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 .aside{position:sticky;top:76px;display:grid;gap:14px}
-.steps{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
+.steps{padding:2px 0 10px;font-weight:700;color:var(--green)}
+.revline{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:.92rem}
+.revline .rl{background:none;border:0;padding:0;color:var(--blue);cursor:pointer;text-decoration:underline}
+.cnt{color:var(--muted);font-size:.9rem;margin:0 0 8px}
 .stepchip{display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer}
 .stepchip .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;border:1.5px solid #c7c3b9;background:#fff}
 .stepchip.done .dot{background:var(--green);border-color:var(--green);color:#fff}
@@ -64,18 +67,22 @@ input[type=text],input[type=url],input[type=email],input[type=tel],select,textar
 textarea{min-height:96px;resize:vertical}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--green);outline-offset:1px}
 .field.bad input,.field.bad select,.field.bad textarea{border-color:var(--error)}
-.field.bad .box,.field.bad .btns,.field.bad .picker{border-color:var(--error)}
+.field.bad .box,.field.bad .btns,.field.bad .picker,.field.bad .pk-trigger{border-color:var(--error)}
 .err{color:var(--error);font-size:.86rem;line-height:1.5;min-height:0}
 .err:empty{display:none}
 .note{color:var(--muted);font-size:.82rem;line-height:1.5}
-.mic-row{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+.mic-row{position:relative;margin:0}
+.mic-row .mic-btn{position:absolute;inset-inline-end:7px;top:0;transform:translateY(calc(-100% - 7px))}
+.mic-row .mic-btn span{display:none}
+input[data-mic],textarea[data-mic]{padding-inline-end:44px}
 input[hidden]+.mic-row,textarea[hidden]+.mic-row{display:none}
-.mic-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #c7c3b9;background:#fff;color:var(--muted);border-radius:999px;padding:3px 12px;font-size:.85rem;cursor:pointer}
+.mic-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #c7c3b9;background:#fff;color:var(--muted);border-radius:50%;padding:0;font-size:.85rem;cursor:pointer}
 .mic-btn:hover:not(:disabled){border-color:var(--green);color:var(--green)}
 .mic-btn.on{color:#c0392b;border-color:#c0392b;font-weight:700;background:#fdf0ee}
 .mic-btn:disabled{opacity:.5;cursor:not-allowed}
 .mic-btn svg{width:16px;height:16px}
-.mic-status{color:var(--muted);font-size:.82rem}
+.mic-status{display:block;color:var(--muted);font-size:.82rem;margin-top:3px}
+.mic-status:empty{display:none}
 .btns{display:flex;flex-wrap:wrap;gap:6px}
 .opt{border:1px solid #c7c3b9;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer}
 .opt.on{background:var(--green);color:#fff;border-color:var(--green)}
@@ -85,6 +92,14 @@ input[hidden]+.mic-row,textarea[hidden]+.mic-row{display:none}
 .box{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fcfbf8}
 .picker{border:1px solid #c7c3b9;border-radius:10px;overflow:hidden;background:#fff}
 .picker .list{max-height:250px;overflow:auto}
+.picker .grp{padding:5px 12px;background:#f3f1ea;font-size:.8rem;font-weight:700;color:var(--muted);border-top:1px solid #e8e3d8}
+.pk-trigger{width:100%;text-align:start;border:1px solid #c7c3b9;border-radius:8px;background:#fff;padding:11px 12px;cursor:pointer;min-height:46px}
+.pk-full{position:fixed;inset:0;background:var(--bg);z-index:40;display:flex;flex-direction:column;padding:12px}
+.pk-full .pk-head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.pk-full .pk-head b{flex:1}
+.pk-full .picker{flex:1;min-height:0;display:flex;flex-direction:column}
+.pk-full .picker .list{max-height:none;flex:1;overflow:auto}
+.pk-full .row{padding:13px 12px}
 .picker .row{display:flex;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid #f0ede4;cursor:pointer}
 .picker .row:hover{background:var(--soft)}
 .picker .row.on{background:var(--soft);font-weight:600}
@@ -93,6 +108,8 @@ input[hidden]+.mic-row,textarea[hidden]+.mic-row{display:none}
 .chipf.on{background:var(--green);color:#fff;border-color:var(--green)}
 .entry{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:#fcfbf8;display:grid;gap:10px}
 .matrix{display:grid;gap:8px}
+.mrow .btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.mrow .opt{text-align:center}
 .mrow{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:10px;align-items:center;border-bottom:1px solid #f0ede4;padding-bottom:8px}
 .rate{display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:10px;align-items:center;margin-bottom:8px}
 .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
@@ -124,7 +141,11 @@ details.why p{margin:8px 0}
 html[dir=rtl] .chip{padding:1px 12px 1px 4px}
 .chip button{border:0;background:none;cursor:pointer;color:var(--muted);font-size:1.1rem;line-height:1}
 .toast{position:fixed;bottom:16px;inset-inline:16px;max-width:520px;margin:auto;background:#26241f;color:#fff;border-radius:10px;padding:10px 14px;z-index:30}
-@media(max-width:900px){.two{grid-template-columns:1fr}.aside{position:static}.slots{grid-template-columns:1fr}.grid,.checks{grid-template-columns:1fr}.mrow,.rate{grid-template-columns:1fr}}
+.opt.dis{opacity:.45;cursor:not-allowed}
+.btns.col .opt{padding:9px 14px}
+.sub{margin-top:8px;display:grid;gap:8px}
+@media(max-width:900px){.grid,.checks{grid-template-columns:1fr}.mrow,.rate{grid-template-columns:1fr}}
+@media(max-width:700px){main{padding:12px 16px 40px}.filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}.chipf{flex:none;white-space:nowrap}.opt{padding:9px 13px;min-height:40px}.rate .btns{flex-wrap:nowrap}.rate .opt{padding:9px 0;flex:1;min-width:0}.rate .opt.long{flex:2}}
 </style>
 </head>
 <body>
@@ -145,7 +166,9 @@ lang = lang === 'en' ? 'en' : 'ar';
 /* ---------- text (Arabic first, English second). Numerals are always 0-9. ---------- */
 var D = {
   title_review:['مراجعاتك','Your reviews'], title_profile:['ملفك المهني','Your professional profile'],
-  step1:['النظام','The system'], step2:['تجربتك','Your experience'], step3:['التقييم والإرسال','Ratings and submit'],
+  step1:['النظام','The system'], step2:['منشأتك وإعداد النظام','Your business and setup'], step3:['الامتثال ورأيك','Compliance and your view'], step4:['التقييم والإرسال','Ratings and submit'],
+  stepline:['الخطوة {0} من 4 \u00b7 {1}','Step {0} of 4 \u00b7 {1}'],
+  revs:['مراجعاتك:','Your reviews:'], cnt:['{0} مسودات \u00b7 {1} مرسلة','{0} drafts \u00b7 {1} submitted'], dup_open:['لديك مراجعة لهذا النظام بالفعل، فتحناها لك.','You already have a review of this software, so we opened it.'],
   st_done:['مكتملة','Done'], st_progress:['قيد الإكمال','In progress'], st_todo:['لم تبدأ','Not started'],
   s_draft:['مسودة','Draft'], s_pending:['بانتظار الاعتماد','Submitted for moderation'], s_approved:['منشورة','Published'], s_rejected:['مرفوضة','Rejected'],
   s_pending_note:['أُرسلت المراجعة وتنتظر الاعتماد. لم تُنشر بعد.','Sent. It is waiting for moderation and is not published yet.'],
@@ -163,7 +186,7 @@ var D = {
   why_3:['ثلاث مراجعات تبني مقارنة. عند نشر ثلاث من مراجعاتك، يعرض ملفك مقارنة بين الأنظمة التي تعرفها.','Three build a comparison. Once three of your reviews are published, your profile shows a comparison of the systems you know.'],
   why_4:['صفة «خبير موثّق» مستقلة. يمنحها فريقنا بعد التحقق من خبرتك، لا بعدد المراجعات.','Verified expert status is separate. Our team grants it after checking your experience, not by counting reviews.'],
   why_5:['المراجعة الأولى تستغرق بضع دقائق، وتُحفظ إجاباتك أولًا بأول. يمكنك التوقف والعودة في أي وقت.','The first review takes a few minutes and your answers are saved as you go. You can stop and come back at any time.'],
-  never_req:['ثلاث مراجعات مشجَّعة لكنها ليست إلزامية.','Three reviews are encouraged but never required.'],
+  never_req:['نشجّعك على ثلاث مراجعات، لكنها ليست شرطًا.','Three reviews are encouraged but never required.'],
   verified_note:['يمنح فريقنا صفة «خبير موثّق» بعد التحقق من خبرتك، ولا ترتبط بعدد المراجعات.','Verified expert status is granted by our team after checking your experience. It does not depend on the number of reviews.'],
   step1_note:['يمكنك الإجابة عن هذه الأسئلة الآن، وسيُطلب منك تسجيل الدخول لحفظ مراجعتك وإرسالها.','You can answer these questions now. You\u2019ll sign in to save and submit your review.'],
   q_software:['أي نظام تراجعه؟','Which software are you reviewing?'],
@@ -173,14 +196,14 @@ var D = {
   custom_name:['اسم النظام','Software name'], custom_type:['نوع النظام','Type of system'],
   custom_note:['سيراجع فريقنا هذا الاسم. يمكنك إرسال المراجعة الآن، وتُربط بصفحة المنتج بعد أن يطابقه المسؤول أو ينشئه.','Our team will check this name. You can submit the review now; it links to a product page after an admin matches or creates the product.'],
   no_results:['لا توجد نتائج.','No results.'],
-  q_role:['دورك عند استخدامه','Your role when you used it'], role_ph:['ابحث أو اكتب دورك','Search or type your role'],
+  q_role:['دورك عند استخدامه','Your role when you used it'],
   q_duration:['كم مدة استخدامك له؟','How long have you used it?'], choose:['اختر','Choose'],
   q_functions:['ما الوظائف التي استخدمتها بنفسك في هذا النظام؟','Which functions have you personally used?'],
   fn_first:['اختر النظام أولًا لتظهر وظائفه.','Choose the software first to see its functions.'],
   select_all:['تحديد الكل','Select all'], other_specify:['أخرى (يرجى التحديد)','Other (please specify)'], fn_other_ph:['اسم الوظيفة','Name of the function'],
   q_btype:['نوع المنشأة','Business type'], q_bname:['اسم المنشأة','Business name'], bname_note:['يُستخدم للتحقق فقط ولا يُعرض للعامة.','Used for verification only, not shown publicly.'],
   q_size:['حجم المنشأة','Company size'], q_deciders:['من شارك في قرار اختيار النظام؟','Who took part in choosing the software?'],
-  q_golive:['كم استغرق تشغيل النظام فعليًا؟','How long did go-live take?'], q_longer:['هل استغرق أطول مما قيل لك؟','Was it longer than you were told?'], q_impl:['من نفّذ التطبيق؟','Who did the implementation?'],
+  q_golive:['كم استغرق تشغيل النظام فعليًا؟','How long did go-live take?'], q_longer:['هل استغرق أطول مما قيل لك؟','Was it longer than you were told?'], q_impl:['من تولّى تنفيذ النظام؟','Who did the implementation?'],
   q_integ:['ما الأنظمة أو التطبيقات التي ربطتها بنفسك بهذا النظام؟','Which systems or applications have you personally connected to this software?'],
   int_name:['النظام أو التطبيق','System or application'], int_name_ph:['اختر من القائمة أو اكتب اسمًا','Pick from the list or type a name'],
   int_purpose:['الغرض من الربط: ما البيانات أو العمليات التي يتناولها؟','Integration purpose: what data or process does it handle?'],
@@ -188,14 +211,21 @@ var D = {
   int_add:['+ أضف ربطًا','+ Add an integration'], int_remove:['حذف هذا الربط','Remove this integration'],
   int_none:['لم أستخدم أي ربط مع أنظمة أخرى','I have not used any integrations'],
   q_comp:['كيف تعامل النظام مع الامتثال السعودي؟','How did the software handle Saudi compliance?'],
-  q_diff:['ما أكبر صعوبة واجهتها؟','What was the biggest difficulty?'],
-  q_wish:['ما التحسين الذي تتمنى رؤيته؟','What improvement would you like to see?'], q_whonot:['من لا ينبغي أن يشتري هذا النظام؟','Who should NOT buy this software?'],
+  q_goal:['ما المشكلة أو الهدف الأساسي الذي استخدمت النظام من أجله؟','What main problem or goal did you use this software to address?'], goal_hint:['اختر حتى 3.','Choose up to 3.'],
+  q_accomp:['ما الذي ساعدك النظام على إنجازه بشكل جيد؟ اذكر مثالًا من تجربتك.','What did the software help you accomplish successfully? Please give an example from your experience.'],
+  q_diff:['ما أكبر مشكلة واجهتك؟','What was the biggest problem you encountered?'], no_problems:['لم أواجه مشكلات مؤثرة','No significant problems'],
+  q_resolved:['هل تم حلّها؟','Was it resolved?'], q_how:['كيف تم حلّها؟','How was it resolved?'], optional_:['اختياري','Optional'],
+  q_suits:['لأي نوع من المنشآت أو الاحتياجات تنصح بهذا النظام؟ ولماذا؟','What types of businesses or needs would you recommend this software for, and why?'],
+  q_suit_sizes:['أحجام المنشآت المناسبة','Company sizes it suits'], q_suit_types:['أنواع المنشآت المناسبة','Business types it suits'], q_suit_why:['لماذا؟','Why?'],
+  q_stop:['لماذا توقفت عن استخدام النظام؟','Why did you stop using the software?'], q_lastused:['متى كانت آخر مرة استخدمت فيها النظام؟','When did you last use the software?'],
+  goal_other_ph:['اكتب الهدف','Write the goal'], stop_other_ph:['اكتب السبب','Write the reason'],
+  q_whonot:['من لا ينبغي أن يشتري هذا النظام؟','Who should NOT buy this software?'],
   whonot_ph:['نوع المنشأة وحجمها التي لا يناسبها النظام، ولماذا.','The kind and size of business it does not suit, and why.'],
   min30_hint:['30 حرفًا على الأقل.','At least 30 characters.'],
   lands:['تظهر هذه الإجابة في صفحة {0} بعد نشرها.','This appears on the {0} page once published.'],
   q_cost:['كم كلّف تقريبًا سنويًا؟','Cost per year'], q_prev:['ماذا كنت تستخدم قبل ذلك؟','What were you using before?'], prev_ph:['ابحث في الأنظمة أو اكتب اسمًا','Search the systems or type a name'],
   prev_none:['لا شيء / جداول بيانات','Nothing / spreadsheets'], q_still:['هل ما زلت تستخدمه؟','Do you still use it?'],
-  q_moved:['إلى ماذا انتقلت؟','What did you move to?'], q_moved_why:['وما السبب؟','And why?'],
+  q_moved:['ماذا استخدمت بعده؟','What did you move to?'], choose_sw:['اختر النظام','Choose the software'], close_:['إغلاق','Close'],
   q_ratings:['التقييم','Rating'], r_overall:['التقييم العام','Overall'], r_ease:['سهولة الاستخدام','Ease of use'], r_support:['جودة الدعم','Support'], r_value:['القيمة مقابل السعر','Value for money'],
   rate_hint:['1 = ضعيف جدًا، 5 = ممتاز.','1 = very poor, 5 = excellent.'], unable:['لا أستطيع التقييم','Unable to rate'],
   q_again:['لو عاد بك الوقت، هل ستختاره مجددًا؟','Would you choose it again?'], q_recommend:['هل توصي الآخرين به؟','Would you recommend it?'],
@@ -213,7 +243,7 @@ var D = {
   done_t:['تم إرسال مراجعتك. يتحقق فريقنا من كل مراجعة قبل نشرها.','Your review has been submitted. Our team checks every review before it is published.'],
   prof_now:['أكمل ملفك المهني','Complete your profile'], prof_later:['أكمله لاحقًا','Complete your profile later'], add_another:['أضف مراجعة أخرى','Add another review'],
   continue_:['أكمل','Continue'], edit_resubmit:['عدّل وأعد الإرسال','Edit and resubmit'], view_:['عرض','View'], to_reviews:['العودة إلى مراجعاتك','Back to your reviews'], to_profile:['الملف المهني','Professional profile'],
-  preview_t:['معاينة: هكذا ستظهر مراجعتك','Preview: how this review will appear'], preview_note:['تتحدث المعاينة أثناء الكتابة. لا تُنشر هذه البيانات إلا بعد الاعتماد.','The preview updates as you type. Nothing is published before moderation.'],
+  preview_t:['معاينة: هكذا ستظهر مراجعتك','Preview: how this review will appear'], preview_note:['تُحدَّث المعاينة أثناء الكتابة. لا تُنشر هذه البيانات إلا بعد الاعتماد.','The preview updates as you type. Nothing is published before moderation.'],
   pv_empty:['ابدأ بالإجابة لتظهر المعاينة.','Start answering to see the preview.'], pv_anon:['خبير (دون اسم)','Expert (name hidden)'], pv_fns:['الوظائف التي استخدمها','Functions used'], pv_integ:['الربط','Integrations'],
   already:['سبق أن أرسلت مراجعة لهذا النظام.','You already submitted a review for this software.'],
   saved_later:['تم حفظ المسودة. يمكنك العودة وإكمالها في أي وقت.','Draft saved. You can come back and finish it at any time.'],
@@ -261,7 +291,18 @@ var D = {
   e_short:['تبدو هذه الإجابة غير مكتملة، يرجى مراجعتها.','This doesn\u2019t look like a complete answer. Please check it.'],
   e_ratings:['اختر تقييمًا، أو «لا أستطيع التقييم».','Choose a rating, or \u201cUnable to rate\u201d.'],
   e_declaration:['يرجى تأكيد الإقرار لإرسال المراجعة.','Please confirm the declaration to submit.'],
-  e_required:['هذا الحقل مطلوب.','This field is required.'], e_email:['أدخل بريدًا إلكترونيًا صحيحًا.','Enter a valid email address.'],
+  e_required:['هذا الحقل مطلوب.','This field is required.'],
+  e_btype:['اختر نوع المنشأة.','Choose the business type.'], e_bname:['اكتب اسم المنشأة.','Write the business name.'], e_size:['اختر حجم المنشأة.','Choose the company size.'],
+  e_deciders:['اختر من شارك في قرار اختيار النظام.','Choose who took part in choosing the software.'], e_golive:['اختر المدة التي استغرقها تشغيل النظام.','Choose how long go-live took.'],
+  e_longer:['اختر هل استغرق أطول مما قيل لك.','Choose whether it took longer than you were told.'], e_cost:['اختر التكلفة السنوية التقريبية.','Choose the approximate yearly cost.'],
+  e_prev:['اكتب ما كنت تستخدمه قبل ذلك، أو اختر «لا شيء / جداول بيانات».','Enter what you used before, or choose \u201cNothing / spreadsheets\u201d.'],
+  e_still:['اختر هل ما زلت تستخدم النظام.','Choose whether you still use it.'], e_again:['اختر هل ستختاره مجددًا.','Choose whether you would choose it again.'],
+  e_recommend:['اختر هل توصي به.','Choose whether you would recommend it.'], e_rel:['اختر علاقتك بالشركة المطورة.','Choose your relationship with the vendor.'],
+  e_int_name:['اكتب اسم النظام أو التطبيق المرتبط.','Enter the connected system or application.'],
+  e_goal:['اختر هدفًا واحدًا على الأقل.','Choose at least one goal.'], e_goal_other:['اكتب الإجابة في الحقل.','Write your answer in the field.'],
+  e_problem:['اكتب أكبر مشكلة واجهتك، أو اختر «لم أواجه مشكلات مؤثرة».','Describe the biggest problem, or choose \u201cNo significant problems\u201d.'],
+  e_resolved:['اختر هل تم حل المشكلة.','Choose whether the problem was resolved.'], e_suits:['اختر حجمًا واحدًا ونوع منشأة واحدًا على الأقل.','Choose at least one company size and one business type.'],
+  e_stop:['اختر سببًا واحدًا على الأقل.','Choose at least one reason.'], e_lastused:['اختر متى استخدمته آخر مرة.','Choose when you last used it.'], e_email:['أدخل بريدًا إلكترونيًا صحيحًا.','Enter a valid email address.'],
   e_linkedin:['أدخل رابط ملفك على LinkedIn (linkedin.com).','Enter your LinkedIn profile URL (linkedin.com).'], e_failed:['تعذّر الحفظ. حاول مرة أخرى.','Could not save. Please try again.']
 };
 function t(k){ var e = D[k]; if(!e){ return k; } var s = e[lang === 'ar' ? 0 : 1]; for(var i = 1; i < arguments.length; i++){ s = s.split('{' + (i - 1) + '}').join(arguments[i]); } return s; }
@@ -447,9 +488,12 @@ var flashMsg = ST.signinFailed ? { kind: 'err', text: 'si_failed' } : null;
 
 function blank(){
   return { software:'', custom_name:'', custom_group:'accounting', role:'', duration:'', functions:[], functions_other:'',
+    main_goals:[], main_goal_other:'',
     business_type:'', business_name:'', company_size:'', deciders:[], golive_time:'', longer_than_told:'', implementer:'',
-    integrations:[], no_integrations:false, compliance:{}, difficulty:'', wishlist:'', who_not_buy:'', annual_cost:'', previous_software:'',
-    still_using:'', moved_to:'', moved_reason:'', overall:'', ease:'', support:'', value:'', choose_again:'', recommend:'', relationship:'', relationship_detail:'',
+    integrations:[], no_integrations:false, compliance:{}, accomplished:'', problem:'', no_problems:false, problem_resolved:'', problem_how:'',
+    suits_sizes:[], suits_types:[], suits_why:'', who_not_buy:'', annual_cost:'', previous_software:'',
+    still_using:'', moved_to:'', stop_reasons:[], stop_other:'', last_used:'',
+    overall:'', ease:'', support:'', value:'', choose_again:'', recommend:'', relationship:'', relationship_detail:'',
     declaration:false, anonymous:false };
 }
 function mergeA(src){
@@ -460,10 +504,11 @@ function mergeA(src){
     else if(typeof a[k] === 'object'){ a[k] = Object.assign({}, src[k]); }
     else { a[k] = src[k]; }
   });
+  if(a.role && !optOf('professional_role', a.role)){ a.role = ''; }
   return a;
 }
 function newReview(){ return { id:null, status:'draft', step:1, a:blank(), errs:{} }; }
-function fromDto(r){ activeMs = Number(lsGet('nexiz_t_' + r.id)) || 0; return { id:r.id, status:r.status, step:Math.min(3, Math.max(1, r.step || 1)), a:mergeA(r.answers), errs:{}, reason:r.reject_reason, name:r.software_name }; }
+function fromDto(r){ activeMs = Number(lsGet('nexiz_t_' + r.id)) || 0; return { id:r.id, status:r.status, step:Math.min(4, Math.max(1, r.step || 1)), a:mergeA(r.answers), errs:{}, reason:r.reject_reason, name:r.software_name }; }
 function curGroup(){
   var sw = softwareById(cur.a.software);
   if(sw){ return sw.group; }
@@ -474,46 +519,59 @@ function curName(){
   return sw ? lab(sw) : (cur.a.software === 'custom' ? cur.a.custom_name : '');
 }
 function readOnly(){ return cur.status === 'pending' || cur.status === 'approved'; }
-function isNo(code){ var o = optOf('still_using', code); return !!o && (o.ar === '\u0644\u0627' || /^no$/i.test(o.en || '')); }
+function isNo(code){ var o = optOf('still_using', code); return !!o && (o.ar === '\u0644\u0627' || /^no\b/i.test(o.en || '')); }
 
 /* ---------- validation: the same rules as the server (the server is the one that decides) ---------- */
 var STEP1 = ['software','custom_name','role','duration','functions','functions_other'];
-var STEP3 = ['ratings','choose_again','recommend','relationship','relationship_detail','declaration'];
-function stepOf(f){ return STEP1.indexOf(f) >= 0 ? 1 : STEP3.indexOf(f) >= 0 ? 3 : 2; }
+var STEP2 = ['main_goals','main_goal_other','business_type','business_name','company_size','deciders','golive_time','longer_than_told','implementer','integrations'];
+var STEP4 = ['ratings','choose_again','recommend','relationship','relationship_detail','declaration'];
+function stepOf(f){ var b = String(f).split('.')[0]; return STEP1.indexOf(b) >= 0 ? 1 : STEP4.indexOf(b) >= 0 ? 4 : STEP2.indexOf(b) >= 0 ? 2 : 3; }
 function validateAll(a){
   var e = {};
   function short(f, v, empty){ if(!v){ e[f] = empty || 'required'; } else if(badShort(v)){ e[f] = 'short'; } }
   if(!softwareById(a.software) && a.software !== 'custom'){ e.software = 'software'; }
   if(a.software === 'custom'){ short('custom_name', a.custom_name, 'required'); }
-  short('role', a.role, 'role');
+  if(!a.role){ e.role = 'role'; }
   if(!a.duration){ e.duration = 'duration'; }
   if(!a.functions.length){ e.functions = 'functions'; }
   else if(a.functions.indexOf('other') >= 0){ if(!a.functions_other){ e.functions_other = 'other_fn'; } else if(badShort(a.functions_other)){ e.functions_other = 'short'; } }
-  if(!a.business_type){ e.business_type = 'required'; }
-  short('business_name', a.business_name);
-  if(!a.company_size){ e.company_size = 'required'; }
-  if(!a.deciders.length){ e.deciders = 'required'; }
-  if(!a.golive_time){ e.golive_time = 'required'; }
-  if(!a.longer_than_told){ e.longer_than_told = 'required'; }
+  if(!a.main_goals.length){ e.main_goals = 'goal'; }
+  else if(a.main_goals.indexOf('other') >= 0){ if(!a.main_goal_other){ e.main_goal_other = 'goal_other'; } else if(badShort(a.main_goal_other)){ e.main_goal_other = 'short'; } }
+  if(!a.business_type){ e.business_type = 'btype'; }
+  short('business_name', a.business_name, 'bname');
+  if(!a.company_size){ e.company_size = 'size'; }
+  if(!a.deciders.length){ e.deciders = 'deciders'; }
+  if(!a.golive_time){ e.golive_time = 'golive'; }
+  if(!a.longer_than_told){ e.longer_than_told = 'longer'; }
   if(!a.no_integrations){
     if(!a.integrations.length){ e.integrations = 'int_purpose'; }
     a.integrations.forEach(function(x, i){
-      if(!x.name){ e['integrations.' + i + '.name'] = 'required'; } else if(badShort(x.name)){ e['integrations.' + i + '.name'] = 'short'; }
+      if(!x.name){ e['integrations.' + i + '.name'] = 'int_name'; } else if(badShort(x.name)){ e['integrations.' + i + '.name'] = 'short'; }
       if(!x.purpose){ e['integrations.' + i + '.purpose'] = 'int_purpose'; } else if(badShort(x.purpose)){ e['integrations.' + i + '.purpose'] = 'short'; }
       if(!x.outcome){ e['integrations.' + i + '.outcome'] = 'int_status'; }
     });
   }
   if(CAT.COMPLIANCE_ROWS.some(function(r){ return !a.compliance[r.code]; })){ e.compliance = 'compliance'; }
-  if((a.wishlist || '').length < 30){ e.wishlist = 'min30'; }
+  if((a.accomplished || '').length < 30){ e.accomplished = 'min30'; }
+  if(!a.no_problems){
+    if(!a.problem){ e.problem = 'problem'; } else if(a.problem.length < 30){ e.problem = 'min30'; }
+    if(!a.problem_resolved){ e.problem_resolved = 'resolved'; }
+  }
+  if(!a.suits_sizes.length || !a.suits_types.length){ e.suits = 'suits'; }
   if((a.who_not_buy || '').length < 30){ e.who_not_buy = 'min30'; }
-  if(!a.annual_cost){ e.annual_cost = 'required'; }
-  short('previous_software', a.previous_software);
-  if(!a.still_using){ e.still_using = 'required'; }
+  if(!a.annual_cost){ e.annual_cost = 'cost'; }
+  short('previous_software', a.previous_software, 'prev');
+  if(!a.still_using){ e.still_using = 'still'; }
+  else if(isNo(a.still_using)){
+    if(!a.stop_reasons.length){ e.stop_reasons = 'stop'; }
+    else if(a.stop_reasons.indexOf('other') >= 0){ if(!a.stop_other){ e.stop_other = 'goal_other'; } else if(badShort(a.stop_other)){ e.stop_other = 'short'; } }
+    if(!a.last_used){ e.last_used = 'lastused'; }
+  }
   if(a.moved_to && badShort(a.moved_to)){ e.moved_to = 'short'; }
   if(!a.overall || !a.ease || !a.support || !a.value){ e.ratings = 'ratings'; }
-  if(!a.choose_again){ e.choose_again = 'required'; }
-  if(!a.recommend){ e.recommend = 'required'; }
-  if(!a.relationship){ e.relationship = 'required'; }
+  if(!a.choose_again){ e.choose_again = 'again'; }
+  if(!a.recommend){ e.recommend = 'recommend'; }
+  if(!a.relationship){ e.relationship = 'rel'; }
   else if(a.relationship !== 'rel_none' && (a.relationship_detail || '').length < 10){ e.relationship_detail = 'min10'; }
   if(!a.declaration){ e.declaration = 'declaration'; }
   return e;
@@ -624,10 +682,22 @@ function doSave(submit){
 }
 /** The visitor just signed in: move the device answers to the account as a Draft, delete the device copy only after the server confirmed. */
 function migrateDevice(d){
-  cur = newReview(); cur.a = mergeA(d.a); activeMs = d.ms || 0; cur.step = 1; screen = 'wizard';
+  var inc = mergeA(d.a), found = null;
+  if(inc.software && inc.software !== 'custom'){ reviews.forEach(function(r){ if(!found && r.answers && r.answers.software === inc.software){ found = r; } }); }
+  if(found && (found.status === 'pending' || found.status === 'approved')){
+    lsDel(DEVICE_KEY); cur = newReview(); screen = 'overview'; flashMsg = { kind:'info', text:'already' }; renderApp(); return Promise.resolve();
+  }
+  if(found){
+    /* the account already has a draft of this product: open it and copy in only the NEW answers, never a second review */
+    cur = fromDto(found); activeMs = Math.max(activeMs, d.ms || 0);
+    ['role','duration','functions','functions_other','custom_name'].forEach(function(k){ var v = inc[k]; if(Array.isArray(v) ? v.length : v){ cur.a[k] = v; } });
+    cur.step = 2; screen = 'wizard'; flashMsg = { kind:'info', text:'dup_open' };
+  } else {
+    cur = newReview(); cur.a = inc; activeMs = d.ms || 0; cur.step = 1; screen = 'wizard';
+  }
   renderApp();
   return doSave(false).then(function(r){
-    if(r && r.ok){ lsDel(DEVICE_KEY); cur = fromDto(r.review); cur.step = 2; renderApp(); }
+    if(r && r.ok){ lsDel(DEVICE_KEY); cur = fromDto(r.review); cur.step = 2; renderApp(); scrollFirst(); }
     else { setSave('failed'); }
   });
 }
@@ -651,7 +721,7 @@ function paintFlash(){
 function fieldWrap(key, label, control, o){
   o = o || {};
   var w = h('div', { class:'field' + (o.wide ? ' wide' : ''), 'data-f':key });
-  if(label){ w.appendChild(h('div', { class:'lbl', id:'l_' + key.replace(/\./g, '_') }, label, o.req ? h('span', { class:'req' }, ' *') : null)); }
+  if(label){ w.appendChild(h('div', { class:'lbl', id:'l_' + key.replace(/\./g, '_') }, label, o.req ? h('span', { class:'req' }, '\u00a0*') : null)); }
   w.appendChild(control);
   if(o.note){ w.appendChild(h('small', { class:'note' }, o.note)); }
   w.appendChild(h('small', { class:'err', role:'alert' }));
@@ -659,7 +729,7 @@ function fieldWrap(key, label, control, o){
 }
 function tInput(key, o){
   o = o || {};
-  var i = h('input', { type:'text', value:cur.a[key] || '', maxlength:o.max || 120, placeholder:o.ph || '', 'aria-labelledby':'l_' + key, list:o.list });
+  var i = h('input', { type:'text', value:cur.a[key] || '', maxlength:o.max || 120, placeholder:o.ph || '', 'aria-labelledby':'l_' + key, list:o.list, 'data-nomic':o.nomic ? '1' : null });
   i.addEventListener('input', function(){ cur.a[key] = i.value; touch(key); });
   return i;
 }
@@ -713,14 +783,56 @@ function checks(key, list){
   return box;
 }
 
+function multiBtns(key, list, o){
+  o = o || {};
+  var box = h('div', { class:'btns', role:'group', 'aria-labelledby':'l_' + key });
+  function paint(){
+    var n = cur.a[key].length;
+    Array.prototype.forEach.call(box.children, function(b){
+      var on = cur.a[key].indexOf(b.getAttribute('data-v')) >= 0;
+      b.classList.toggle('on', on); b.classList.toggle('dis', !!o.max && !on && n >= o.max); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  list.forEach(function(x){
+    box.appendChild(h('button', { type:'button', class:'opt', 'data-v':x.code, onclick:function(){
+      var s = cur.a[key], i = s.indexOf(x.code);
+      if(i >= 0){ s.splice(i, 1); } else { if(o.max && s.length >= o.max){ return; } s.push(x.code); }
+      paint(); touch(key); if(o.after){ o.after(); }
+    } }, lab(x)));
+  });
+  paint(); return box;
+}
+/** "Other (please specify)" text that only exists while the code 'other' is chosen. */
+function otherText(host, listKey, textKey, ph){
+  clear(host);
+  if(cur.a[listKey].indexOf('other') < 0){ return; }
+  host.appendChild(fieldWrap(textKey, null, tInput(textKey, { max:120, ph:t(ph) }), { wide:true }));
+  if(cur.errs && cur.errs[textKey]){ setErr(textKey, cur.errs[textKey]); }
+}
+function yesNoList(){
+  var l = CAT.OPTIONS.still_using || [];
+  var yn = l.filter(function(o){ return o.ar === '\u0646\u0639\u0645' || o.ar === '\u0644\u0627' || /^(yes|no)\b/i.test(o.en || ''); });
+  return yn.length === 2 ? yn : l;
+}
+
 /* ---------- step 1: software picker ---------- */
 var pickFilter = 'all', pickQuery = '';
+var GROUP_ORDER = ['pos', 'erp', 'accounting'];
+function isMobile(){ return !!(window.matchMedia && window.matchMedia('(max-width:700px)').matches); }
+function sortedSoftware(){
+  return CAT.SOFTWARE.slice().sort(function(a, b){
+    var ga = GROUP_ORDER.indexOf(a.group), gb = GROUP_ORDER.indexOf(b.group);
+    if(ga !== gb){ return ga - gb; }
+    return lab(a).localeCompare(lab(b), lang === 'ar' ? 'ar' : 'en', { sensitivity:'base' });
+  });
+}
 function softwarePicker(){
   var host = h('div');
   var search = h('input', { type:'text', 'data-nomic':'1', placeholder:t('search_ph'), 'aria-label':t('search_ph'), autocomplete:'off' });
   var filters = h('div', { class:'filters', role:'group' });
   var list = h('div', { class:'list', role:'radiogroup', 'aria-labelledby':'l_software' });
   var custom = h('div', { class:'box', style:'margin-top:10px' });
+  var overlay = null, trigger = null, mobile = isMobile();
   function drawFilters(){
     clear(filters);
     [['all','f_all'],['pos','f_pos'],['erp','f_erp'],['accounting','f_accounting']].forEach(function(p){
@@ -729,10 +841,11 @@ function softwarePicker(){
   }
   function drawList(){
     clear(list);
-    var q = norm(pickQuery), n = 0;
-    CAT.SOFTWARE.forEach(function(s){
+    var q = norm(pickQuery), n = 0, lastG = null;
+    sortedSoftware().forEach(function(s){
       if(pickFilter !== 'all' && s.group !== pickFilter){ return; }
-      if(q && norm(s.ar).indexOf(q) < 0 && norm(s.en).indexOf(q) < 0){ return; }
+      if(q && norm(s.ar).indexOf(q) < 0 && norm(s.en).indexOf(q) < 0 && norm(s.al || '').indexOf(q) < 0){ return; }
+      if(pickFilter === 'all' && s.group !== lastG){ lastG = s.group; list.appendChild(h('div', { class:'grp', role:'presentation' }, t('f_' + s.group))); }
       n++;
       var on = cur.a.software === s.id;
       list.appendChild(h('div', { class:'row' + (on ? ' on' : ''), role:'radio', 'aria-checked':on ? 'true' : 'false', tabindex:'0', onclick:function(){ choose(s.id); }, onkeydown:function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); choose(s.id); } } },
@@ -752,19 +865,37 @@ function softwarePicker(){
     custom.appendChild(h('div', { class:'grid' }, fieldWrap('custom_name', t('custom_name'), nm, { req:true }), fieldWrap('custom_type', t('custom_type'), ty)));
     custom.appendChild(h('small', { class:'note' }, t('custom_note')));
   }
+  function paintTrigger(){ if(trigger){ clear(trigger); trigger.appendChild(frag(cur.a.software === 'custom' ? (cur.a.custom_name || t('not_listed')) : (curName() || t('choose_sw')))); } }
+  function closeOverlay(){ if(overlay && overlay.parentNode){ overlay.parentNode.removeChild(overlay); } overlay = null; document.body.style.overflow = ''; paintTrigger(); }
+  function openOverlay(){
+    overlay = h('div', { class:'pk-full', role:'dialog', 'aria-modal':'true' },
+      h('div', { class:'pk-head' }, h('b', null, t('q_software')), h('button', { type:'button', class:'btn ghost small', onclick:closeOverlay, text:t('close_') })),
+      panel);
+    document.body.appendChild(overlay); document.body.style.overflow = 'hidden';
+    drawList();
+  }
   function choose(id){
     if(readOnly()){ return; }
+    if(signedIn && id !== 'custom'){
+      var dup = null; reviews.forEach(function(r){ if(!dup && r.id !== cur.id && r.answers && r.answers.software === id){ dup = r; } });
+      if(dup){ closeOverlay(); flash('info', 'dup_open'); openReview(dup); return; }
+    }
     var before = curGroup(); cur.a.software = id;
     if(id !== 'custom'){ cur.a.custom_name = ''; }
     var after = curGroup();
     if(before !== after){ cur.a.functions = []; cur.a.functions_other = ''; }
     drawList(); drawCustom(); drawFunctions(); touch('software'); touch('custom_name');
+    if(overlay){ closeOverlay(); }
     var nm = $('#form [data-f="custom_name"] input'); if(id === 'custom' && nm){ nm.focus(); }
   }
   search.addEventListener('input', function(){ pickQuery = search.value; drawList(); });
   search.value = pickQuery;
-  host.appendChild(search); host.appendChild(filters);
-  host.appendChild(h('div', { class:'picker' }, list)); host.appendChild(custom);
+  var panel = h('div', { style:'display:flex;flex-direction:column;min-height:0;flex:1' }, search, filters, h('div', { class:'picker' }, list));
+  if(mobile){
+    trigger = h('button', { type:'button', class:'pk-trigger', 'aria-haspopup':'dialog', onclick:openOverlay });
+    paintTrigger(); host.appendChild(trigger);
+  } else { host.appendChild(panel); }
+  host.appendChild(custom);
   drawFilters(); drawList(); drawCustom();
   return host;
 }
@@ -810,10 +941,9 @@ function drawFunctions(){
 function step1(form){
   var a = cur.a;
   form.appendChild(h('h2', null, t('step1')));
-  if(!signedIn){ form.appendChild(h('div', { class:'banner info' }, t('step1_note'))); }
   form.appendChild(h('div', { class:'grid' },
     fieldWrap('software', t('q_software'), softwarePicker(), { req:true, wide:true }),
-    fieldWrap('role', t('q_role'), combo('role', CAT.OPTIONS.professional_role, { ph:t('role_ph') }), { req:true }),
+    fieldWrap('role', t('q_role'), radios('role', CAT.OPTIONS.professional_role), { req:true, wide:true }),
     fieldWrap('duration', t('q_duration'), sel('duration', CAT.DURATIONS), { req:true })));
   fnHost = h('div');
   form.appendChild(h('div', { style:'margin-top:14px' }, fieldWrap('functions', t('q_functions'), fnHost, { req:true, wide:true })));
@@ -865,22 +995,48 @@ function compliance(){
   });
   return box;
 }
-var movedHost = null;
+var movedHost = null, goalOtherHost = null, probHost = null;
 function drawMoved(){
   if(!movedHost){ return; } clear(movedHost);
   if(!isNo(cur.a.still_using)){ return; }
-  movedHost.appendChild(h('div', { class:'grid wide' },
-    fieldWrap('moved_to', t('q_moved'), combo('moved_to', softwareOptions(), { ph:t('prev_ph') })),
-    fieldWrap('moved_reason', t('q_moved_why'), tArea('moved_reason'))));
+  var other = h('div');
+  var stopBox = h('div', null, multiBtns('stop_reasons', CAT.STOP_REASONS, { after:function(){ otherText(other, 'stop_reasons', 'stop_other', 'stop_other_ph'); } }), other);
+  otherText(other, 'stop_reasons', 'stop_other', 'stop_other_ph');
+  movedHost.appendChild(h('div', { class:'grid' },
+    fieldWrap('stop_reasons', t('q_stop'), stopBox, { req:true, wide:true }),
+    fieldWrap('moved_to', t('q_moved'), combo('moved_to', softwareOptions(), { ph:t('prev_ph') }), { wide:true }),
+    fieldWrap('last_used', t('q_lastused'), radios('last_used', CAT.LAST_USED), { req:true, wide:true })));
 }
-function softwareOptions(){ return CAT.SOFTWARE.map(function(s){ return { code:s.id, ar:s.ar, en:s.en }; }); }
+function softwareOptions(){ return sortedSoftware().map(function(s){ return { code:s.id, ar:s.ar, en:s.en }; }); }
+function drawProblem(){
+  if(!probHost){ return; } clear(probHost); var a = cur.a;
+  var ta = tArea('problem'); ta.disabled = !!a.no_problems; if(a.no_problems){ ta.value = ''; }
+  var cb = h('input', { type:'checkbox', checked:a.no_problems });
+  cb.addEventListener('change', function(){
+    a.no_problems = cb.checked;
+    if(cb.checked){ a.problem = ''; a.problem_resolved = ''; a.problem_how = ''; delete cur.errs.problem; delete cur.errs.problem_resolved; }
+    drawProblem(); touch('problem'); touch('problem_resolved');
+  });
+  var box = h('div', null, ta, h('label', { class:'check', style:'margin-top:8px' }, cb, h('span', null, t('no_problems'))));
+  probHost.appendChild(fieldWrap('problem', t('q_diff'), box, { req:!a.no_problems, wide:true, note:a.no_problems ? null : t('min30_hint') + ' ' + landsNote() }));
+  if(!a.no_problems){
+    probHost.appendChild(h('div', { style:'margin-top:12px' }, fieldWrap('problem_resolved', t('q_resolved'), radios('problem_resolved', CAT.RESOLVED, { after:drawProblem }), { req:true, wide:true })));
+    if(a.problem_resolved === 'res_full' || a.problem_resolved === 'res_part'){
+      probHost.appendChild(h('div', { style:'margin-top:12px' }, fieldWrap('problem_how', t('q_how') + ' (' + t('optional_') + ')', tArea('problem_how'), { wide:true })));
+    }
+  }
+  if(cur.errs){ ['problem', 'problem_resolved'].forEach(function(k){ if(cur.errs[k]){ setErr(k, cur.errs[k]); } }); }
+}
 function step2(form){
-  var a = cur.a;
   form.appendChild(h('h2', null, t('step2')));
-  var g = h('div', { class:'grid' });
+  goalOtherHost = h('div');
+  var goalBox = h('div', null, h('small', { class:'note' }, t('goal_hint')), multiBtns('main_goals', CAT.GOALS, { max:3, after:function(){ otherText(goalOtherHost, 'main_goals', 'main_goal_other', 'goal_other_ph'); } }), goalOtherHost);
+  otherText(goalOtherHost, 'main_goals', 'main_goal_other', 'goal_other_ph');
+  form.appendChild(fieldWrap('main_goals', t('q_goal'), goalBox, { req:true, wide:true }));
+  var g = h('div', { class:'grid', style:'margin-top:14px' });
   g.appendChild(fieldWrap('business_type', t('q_btype'), sel('business_type', CAT.OPTIONS.business_type), { req:true }));
-  g.appendChild(fieldWrap('business_name', t('q_bname'), tInput('business_name'), { req:true, note:t('bname_note') }));
-  g.appendChild(fieldWrap('company_size', t('q_size'), sel('company_size', CAT.SIZES), { req:true }));
+  g.appendChild(fieldWrap('business_name', t('q_bname'), tInput('business_name', { nomic:true }), { req:true, note:t('bname_note') }));
+  g.appendChild(fieldWrap('company_size', t('q_size'), radios('company_size', CAT.SIZES), { req:true, wide:true }));
   g.appendChild(fieldWrap('deciders', t('q_deciders'), checks('deciders', CAT.OPTIONS.decision_maker), { req:true, wide:true }));
   g.appendChild(fieldWrap('golive_time', t('q_golive'), sel('golive_time', CAT.OPTIONS.golive_time), { req:true }));
   g.appendChild(fieldWrap('longer_than_told', t('q_longer'), sel('longer_than_told', CAT.OPTIONS.longer_than_told), { req:true }));
@@ -889,20 +1045,31 @@ function step2(form){
   intHost = h('div');
   form.appendChild(h('div', { style:'margin-top:14px' }, fieldWrap('integrations', t('q_integ'), intHost, { req:true, wide:true })));
   drawIntegrations();
-  form.appendChild(h('div', { style:'margin-top:14px' }, fieldWrap('compliance', t('q_comp'), compliance(), { req:true, wide:true })));
+}
+function step3(form){
+  form.appendChild(h('h2', null, t('step3')));
+  form.appendChild(fieldWrap('compliance', t('q_comp'), compliance(), { req:true, wide:true }));
+  var g = h('div', { class:'grid', style:'margin-top:14px' });
+  g.appendChild(fieldWrap('accomplished', t('q_accomp'), tArea('accomplished'), { req:true, wide:true, note:t('min30_hint') + ' ' + landsNote() }));
+  form.appendChild(g);
+  probHost = h('div', { style:'margin-top:14px' }); form.appendChild(probHost); drawProblem();
+  var sw = h('div', { class:'sub' },
+    h('div', { class:'lbl', id:'l_suit_sizes' }, t('q_suit_sizes')), multiBtns('suits_sizes', CAT.SIZES),
+    h('div', { class:'lbl', id:'l_suit_types' }, t('q_suit_types')), multiBtns('suits_types', CAT.OPTIONS.business_type));
+  form.appendChild(h('div', { style:'margin-top:14px' }, fieldWrap('suits', t('q_suits'), sw, { req:true, wide:true }),
+    h('div', { style:'margin-top:10px' }, fieldWrap('suits_why', t('q_suit_why') + ' (' + t('optional_') + ')', tArea('suits_why'), { wide:true }))));
   var g2 = h('div', { class:'grid', style:'margin-top:14px' });
-  g2.appendChild(fieldWrap('difficulty', t('q_diff'), tArea('difficulty'), { wide:true, note:landsNote() }));
-  g2.appendChild(fieldWrap('wishlist', t('q_wish'), tArea('wishlist'), { req:true, wide:true, note:t('min30_hint') + ' ' + landsNote() }));
   g2.appendChild(fieldWrap('who_not_buy', t('q_whonot'), tArea('who_not_buy', { ph:t('whonot_ph') }), { req:true, wide:true, note:t('min30_hint') + ' ' + landsNote() }));
   g2.appendChild(fieldWrap('annual_cost', t('q_cost'), sel('annual_cost', CAT.OPTIONS.annual_cost), { req:true }));
   var prev = softwareOptions().concat([{ code:'none', ar:t('prev_none'), en:t('prev_none') }]);
   g2.appendChild(fieldWrap('previous_software', t('q_prev'), combo('previous_software', prev, { ph:t('prev_ph') }), { req:true }));
-  g2.appendChild(fieldWrap('still_using', t('q_still'), sel('still_using', CAT.OPTIONS.still_using, { after:drawMoved }), { req:true }));
+  g2.appendChild(fieldWrap('still_using', t('q_still'), radios('still_using', yesNoList(), { after:drawMoved }), { req:true, wide:true }));
   form.appendChild(g2);
   movedHost = h('div', { style:'margin-top:14px' }); form.appendChild(movedHost); drawMoved();
 }
 
 /* ---------- step 3 ---------- */
+function recommendList(){ return (CAT.OPTIONS.recommend || []).filter(function(o){ return !(/depend/i.test(o.en || '') || (o.ar || '').indexOf('\u064a\u0639\u062a\u0645\u062f') >= 0); }); }
 var relHost = null;
 function ratingRow(key, labelKey, unrated){
   var row = h('div', { class:'rate' }, h('div', { style:'font-weight:600' }, t(labelKey)));
@@ -916,22 +1083,22 @@ function drawRel(){
   if(!relHost){ return; } clear(relHost);
   if(cur.a.relationship && cur.a.relationship !== 'rel_none'){ relHost.appendChild(fieldWrap('relationship_detail', t('q_rel_detail'), tInput('relationship_detail', { max:600 }), { req:true })); }
 }
-function step3(form){
+function step4(form){
   var a = cur.a;
-  form.appendChild(h('h2', null, t('step3')));
+  form.appendChild(h('h2', null, t('step4')));
   var box = h('div'); box.appendChild(h('small', { class:'note' }, t('rate_hint')));
   box.appendChild(ratingRow('overall', 'r_overall', false)); box.appendChild(ratingRow('ease', 'r_ease', false));
   box.appendChild(ratingRow('support', 'r_support', true)); box.appendChild(ratingRow('value', 'r_value', true));
   form.appendChild(fieldWrap('ratings', t('q_ratings'), box, { req:true, wide:true }));
   var g = h('div', { class:'grid', style:'margin-top:14px' });
   g.appendChild(fieldWrap('choose_again', t('q_again'), radios('choose_again', CAT.OPTIONS.would_choose_again), { req:true }));
-  g.appendChild(fieldWrap('recommend', t('q_recommend'), radios('recommend', CAT.OPTIONS.recommend), { req:true }));
+  g.appendChild(fieldWrap('recommend', t('q_recommend'), radios('recommend', recommendList()), { req:true }));
   g.appendChild(fieldWrap('relationship', t('q_rel'), sel('relationship', CAT.OPTIONS.relationship, { after:function(){ drawRel(); } }), { req:true, wide:true }));
   form.appendChild(g);
   relHost = h('div', { style:'margin-top:10px' }); form.appendChild(relHost); drawRel();
   var decl = h('input', { type:'checkbox', checked:a.declaration });
   decl.addEventListener('change', function(){ a.declaration = decl.checked; touch('declaration'); });
-  form.appendChild(h('div', { style:'margin-top:14px' }, fieldWrap('declaration', null, h('label', { class:'check' }, decl, h('span', null, t('declaration'), h('span', { class:'req' }, ' *'))), { wide:true })));
+  form.appendChild(h('div', { style:'margin-top:14px' }, fieldWrap('declaration', null, h('label', { class:'check' }, decl, h('span', null, t('declaration'), h('span', { class:'req' }, '\u00a0*'))), { wide:true })));
   var anon = h('input', { type:'checkbox', checked:a.anonymous });
   anon.addEventListener('change', function(){ a.anonymous = anon.checked; touch('anonymous'); });
   form.appendChild(h('div', { style:'margin-top:8px' }, h('label', { class:'check' }, anon, h('span', null, t('anonymous'))), h('small', { class:'note' }, t('anon_note'))));
@@ -950,80 +1117,59 @@ function topBar(){
   links.appendChild(h('button', { type:'button', class:'btn ghost small', onclick:function(){ lang = lang === 'ar' ? 'en' : 'ar'; lsSet('nexiz_lang', lang); renderApp(); }, text:t('lang_btn') }));
   if(view === 'profile'){ links.appendChild(h('a', { class:'btn ghost small', href:'/expert/frame', text:t('to_reviews') })); }
   else if(signedIn){ links.appendChild(h('a', { class:'btn ghost small', href:'/expert/frame?view=profile', text:t('to_profile') })); }
-  else { links.appendChild(h('a', { class:'btn ghost small', href:'/login?next=%2Fexpert', target:'_top', text:t('si_email') })); }
   return h('div', { class:'top' }, h('h1', null, view === 'profile' ? t('title_profile') : t('title_review')), links);
 }
 function statusChip(st){ return h('span', { class:'chip-status ' + st }, t('s_' + st)); }
+function rName(r){ var sw = softwareById(r.answers && r.answers.software); return sw ? lab(sw) : (r.software_name || t('slot_unsaved')); }
+function draftCount(){ return reviews.filter(function(r){ return r.status === 'draft' || r.status === 'rejected'; }).length; }
 function renderProgress(){
   var host = $('#progress'); if(!host){ return; }
   clear(host);
-  var n = submittedCount(), key = 'p' + Math.min(3, n);
-  var slots = h('div', { class:'slots' + (reviews.length > 3 ? ' many' : '') });
-  var count = Math.max(3, reviews.length + (cur && !cur.id && screen === 'wizard' && reviews.length >= 3 ? 1 : 0));
-  for(var i = 0; i < count; i++){
-    (function(r, idx){
-      if(r){
-        var active = cur && cur.id === r.id && screen !== 'overview';
-        slots.appendChild(h('button', { type:'button', class:'slot filled' + (active ? ' active' : ''), onclick:function(){ openReview(r); } }, h('b', null, r.software_name || t('slot_unsaved')), statusChip(r.status)));
-      } else {
-        var isNew = !!cur && !cur.id && screen !== 'overview' && idx === reviews.length && (cur.a.software || signedIn === false);
-        slots.appendChild(h('button', { type:'button', class:'slot' + (isNew ? ' active' : ''), onclick:startNew }, isNew && curName() ? h('b', null, curName()) : h('span', { class:'muted' }, t('slot_new')), isNew ? statusChip('draft') : null));
-      }
-    })(reviews[i], i);
+  if(!signedIn || view !== 'review'){ return; }
+  if(screen === 'wizard' && reviews.length){
+    var line = h('div', { class:'revline' }, h('b', null, t('revs')));
+    reviews.forEach(function(r, i){
+      if(i){ line.appendChild(h('span', { class:'muted', 'aria-hidden':'true' }, '\u00b7')); }
+      line.appendChild(h('button', { type:'button', class:'rl', style:(cur && cur.id === r.id) ? 'font-weight:700' : '', onclick:function(){ openReview(r); } }, rName(r) + ' (' + t('s_' + r.status) + ')'));
+    });
+    line.appendChild(h('span', { class:'muted', 'aria-hidden':'true' }, '\u00b7'));
+    line.appendChild(h('button', { type:'button', class:'rl', onclick:startNew }, t('slot_new')));
+    host.appendChild(line);
   }
-  host.appendChild(h('div', { class:'card' }, h('div', { class:'slot-line' }, h('b', null, t('rev_progress')), h('span', { class:'muted small' }, t(key))), h('div', { style:'height:10px' }), slots, h('div', { class:'note', style:'margin-top:8px' }, t('never_req'))));
-  if(signedIn){
+  if(screen === 'overview' || screen === 'done'){
     var pct = profilePct();
     host.appendChild(h('div', { class:'card', style:'padding:12px 20px' }, h('div', { class:'slot-line' }, h('b', null, t('prof_progress')), h('span', { class:'small' }, pct + '%')), h('div', { class:'bar', style:'margin:6px 0' }, h('i', { style:'width:' + pct + '%' })), h('a', { class:'small', href:'/expert/frame?view=profile' }, t('prof_now'))));
   }
 }
 function whyPanel(){
-  var d = h('details', { class:'why' }, h('summary', null, t('why_t')), h('p', null, t('why_1')), h('p', null, t('why_2')), h('p', null, t('why_3')), h('p', null, t('why_4')), h('p', { class:'muted' }, t('why_5')));
-  if(!signedIn && reviews.length === 0){ d.open = true; }
-  return d;
-}
-var STEP_KEYS = {
-  1:['software','role','duration','functions'],
-  2:['business_type','business_name','company_size','deciders','golive_time','longer_than_told','integrations','compliance','difficulty','wishlist','who_not_buy','annual_cost','previous_software','still_using'],
-  3:['overall','ease','support','value','choose_again','recommend','relationship','declaration']
-};
-function anyFilled(n){
-  var a = cur.a;
-  return STEP_KEYS[n].some(function(k){ var v = a[k]; if(k === 'integrations'){ return a.no_integrations || a.integrations.length > 0; } if(k === 'compliance'){ return Object.keys(v).length > 0; } return Array.isArray(v) ? v.length > 0 : v === true || (typeof v === 'string' && v !== ''); });
-}
-function stepState(n){
-  var errs = validateAll(cur.a), bad = Object.keys(errs).some(function(k){ return stepOf(k) === n; });
-  if(!bad){ return 'done'; }
-  return (cur.step === n || anyFilled(n)) ? 'progress' : 'todo';
+  return h('details', { class:'why' }, h('summary', null, t('why_t')), h('p', null, t('why_1')), h('p', null, t('why_2')), h('p', null, t('why_3')), h('p', null, t('why_4')), h('p', { class:'muted' }, t('why_5')), h('p', { class:'muted' }, t('never_req')));
 }
 function renderChips(){
   var host = $('#chips'); if(!host){ return; } clear(host);
-  [1, 2, 3].forEach(function(n){
-    var st = stepState(n);
-    host.appendChild(h('button', { type:'button', class:'stepchip ' + st + (cur.step === n ? ' current' : ''), 'aria-current':cur.step === n ? 'step' : null, onclick:function(){ gotoStep(n); } },
-      h('span', { class:'dot' }, st === 'done' ? '\u2713' : String(n)), h('span', null, t('step' + n)), h('span', { class:'st' }, t('st_' + st))));
-  });
+  host.appendChild(frag(t('stepline', cur.step, t('step' + cur.step))));
 }
 function renderNav(form){
   var step = cur.step, grp = h('div', { class:'grp' });
   if(step > 1){ grp.appendChild(h('button', { type:'button', class:'btn ghost', onclick:function(){ gotoStep(step - 1); }, text:t('back') })); }
-  if(step < 3){ grp.appendChild(h('button', { type:'button', class:'btn', onclick:nextClicked, text:t('next') })); }
+  if(step < 4){ grp.appendChild(h('button', { type:'button', class:'btn', onclick:nextClicked, text:t('next') })); }
   else { grp.appendChild(h('button', { type:'button', class:'btn', onclick:submitClicked, text:t('submit') })); }
-  grp.appendChild(h('button', { type:'button', class:'btn ghost', onclick:saveLater, text:t('save_later') }));
+  if(signedIn){ grp.appendChild(h('button', { type:'button', class:'btn ghost', onclick:saveLater, text:t('save_later') })); }
   form.appendChild(h('div', { class:'nav' }, grp, h('div', { class:'save' })));
   renderSaveBar();
 }
 function renderStepForm(){
   var form = $('#form'); clear(form);
-  [null, step1, step2, step3][cur.step](form);
+  [null, step1, step2, step3, step4][cur.step](form);
   renderNav(form);
   applyErrs(false);
 }
 function renderWizard(body){
-  var main = h('div', null, h('div', { id:'chips', class:'steps' }), h('div', { class:'card', id:'form' }));
-  var aside = h('div', { class:'aside' }, h('div', { class:'card', id:'preview' }), h('div', { class:'card small muted' }, t('verified_note')));
-  body.appendChild(h('div', { class:'two' }, main, aside));
-  renderChips(); renderStepForm(); renderPreview();
+  body.appendChild(h('div', null, h('div', { id:'chips', class:'steps' }), h('div', { class:'card', id:'form' })));
+  renderChips(); renderStepForm();
+}
+function scrollFirst(){
+  var w = $('#form [data-f]');
+  if(w){ var r = w.getBoundingClientRect(); window.scrollTo(0, Math.max(0, r.top + (window.pageYOffset || 0) - 12)); } else { window.scrollTo(0, 0); }
 }
 function renderPreview(){
   var host = $('#preview'); if(!host){ return; }
@@ -1044,7 +1190,7 @@ function previewInto(host, a, status){
   if(a.functions.indexOf('other') >= 0 && a.functions_other){ fl.push(a.functions_other); }
   if(fl.length){ pv.appendChild(h('div', null, h('div', { class:'small muted' }, t('pv_fns')), h('div', null, fl.map(function(x){ return h('span', { class:'tag' }, x); })))); }
   if(a.integrations.length){ pv.appendChild(h('div', null, h('div', { class:'small muted' }, t('pv_integ')), a.integrations.filter(function(x){ return x.name; }).map(function(x){ var o = CAT.INTEGRATION_OUTCOMES.filter(function(q){ return q.code === x.outcome; })[0]; return h('div', { class:'small' }, x.name + (o ? ' \u2014 ' + lab(o) : '')); }))); }
-  [['q_diff', a.difficulty], ['q_wish', a.wishlist], ['q_whonot', a.who_not_buy]].forEach(function(p){ if(p[1]){ pv.appendChild(h('div', null, h('div', { class:'small muted' }, t(p[0])), h('div', { style:'white-space:pre-wrap' }, p[1].slice(0, 400)))); } });
+  [['q_accomp', a.accomplished], ['q_diff', a.problem], ['q_whonot', a.who_not_buy]].forEach(function(p){ if(p[1]){ pv.appendChild(h('div', null, h('div', { class:'small muted' }, t(p[0])), h('div', { style:'white-space:pre-wrap' }, p[1].slice(0, 400)))); } });
   host.appendChild(pv); host.appendChild(h('small', { class:'note', style:'display:block;margin-top:8px' }, t('preview_note')));
 }
 function codeOrLabel(list, v){ for(var i = 0; i < list.length; i++){ if(list[i].code === v){ return lab(list[i]); } } return v || ''; }
@@ -1056,7 +1202,7 @@ function gotoStep(n){
   if(n > 1 && !cur.a.software){ cur.errs = Object.assign(cur.errs, { software:'software' }); if(cur.step !== 1){ cur.step = 1; renderStepForm(); renderChips(); } applyErrs(true); return; }
   cur.step = n; renderStepForm(); renderChips();
   if(signedIn){ queueSave(); }
-  window.scrollTo(0, 0);
+  scrollFirst();
 }
 function stepErrors(step){
   var all = validateAll(cur.a), out = {};
@@ -1068,7 +1214,7 @@ function nextClicked(){
   Object.keys(cur.errs).forEach(function(k){ if(stepOf(k) === cur.step){ delete cur.errs[k]; } });
   if(Object.keys(errs).length){ Object.assign(cur.errs, errs); renderChips(); applyErrs(true); return; }
   if(!signedIn){ deviceWrite(); screen = 'signin'; renderApp(); return; }
-  if(cur.step < 3){ cur.step += 1; renderStepForm(); renderChips(); doSave(false); window.scrollTo(0, 0); }
+  if(cur.step < 4){ cur.step += 1; renderStepForm(); renderChips(); doSave(false); scrollFirst(); }
 }
 function saveLater(){
   if(!signedIn){ deviceWrite(); screen = 'signin'; renderApp(); return; }
@@ -1101,23 +1247,25 @@ function startNew(){
 
 /* ---------- screens ---------- */
 function renderOverview(body){
+  var nd = draftCount();
+  if(nd){ body.appendChild(h('p', { class:'cnt' }, t('cnt', nd, submittedCount()))); }
   body.appendChild(h('div', { class:'card' },
     reviews.map(function(r){
       return h('div', { class:'slot-line', style:'padding:10px 0;border-bottom:1px solid var(--line)' },
-        h('div', null, h('b', null, r.software_name || t('slot_unsaved')), ' ', statusChip(r.status),
+        h('div', null, h('b', null, rName(r)), ' ', statusChip(r.status),
           r.status === 'pending' ? h('div', { class:'note' }, t('s_pending_note')) : r.status === 'approved' ? h('div', { class:'note' }, t('s_approved_note')) : r.status === 'rejected' && r.reject_reason ? h('div', { class:'err', style:'display:block' }, t('s_rejected_note', lab(r.reject_reason))) : null),
         h('button', { type:'button', class:'btn ghost small', onclick:function(){ openReview(r); }, text:(r.status === 'pending' || r.status === 'approved') ? t('view_') : r.status === 'rejected' ? t('edit_resubmit') : t('continue_') }));
     }),
     h('div', { class:'big-actions' }, h('button', { type:'button', class:'btn', onclick:startNew, text:t('add_another') }))));
 }
 function renderReadonly(body){
-  var card = h('div', { class:'card' }, h('h2', null, curName()), statusChip(cur.status), h('p', { class:'muted' }, cur.status === 'approved' ? t('s_approved_note') : t('s_pending_note')));
+  var card = h('div', { class:'card' }, h('h2', null, curName() || ''), statusChip(cur.status), h('p', { class:'muted' }, cur.status === 'approved' ? t('s_approved_note') : t('s_pending_note')));
   card.appendChild(h('div', { class:'big-actions' }, h('button', { type:'button', class:'btn ghost', onclick:function(){ screen = 'overview'; renderApp(); }, text:t('to_reviews') })));
   var pv = h('div', { class:'card' }); previewInto(pv, cur.a, cur.status);
-  body.appendChild(h('div', { class:'two' }, card, pv));
+  body.appendChild(card); body.appendChild(pv);
 }
 function renderDone(body){
-  body.appendChild(h('div', { class:'card' }, h('div', { class:'banner ok' }, t('done_t')),
+  body.appendChild(h('div', { class:'card' }, h('div', { class:'banner ok' }, t('done_t')), h('p', { class:'muted small' }, t('verified_note')),
     h('div', { class:'big-actions' },
       h('a', { class:'btn', href:'/expert/frame?view=profile', text:t('prof_now') }),
       h('button', { type:'button', class:'btn ghost', onclick:function(){ screen = 'overview'; renderApp(); }, text:t('prof_later') }),
@@ -1127,9 +1275,9 @@ function renderSignin(body){
   var P = ST.providers || {};
   var box = h('div', { class:'card', style:'max-width:520px;margin:20px auto' }, h('h2', null, t('si_title')), h('p', { class:'muted' }, t('si_text')));
   var acts = h('div', { style:'display:grid;gap:10px;margin-top:10px' });
-  if(P.google){ acts.appendChild(h('a', { class:'btn ghost', target:'_top', href:'/auth/google?next=%2Fexpert', text:t('si_google') })); }
+  if(P.google){ acts.appendChild(h('a', { class:'btn', target:'_top', href:'/auth/google?next=%2Fexpert', text:t('si_google') })); }
   if(P.linkedin){ acts.appendChild(h('a', { class:'btn ghost', target:'_top', href:'/auth/linkedin?next=%2Fexpert', text:t('si_linkedin') })); }
-  acts.appendChild(h('a', { class:'btn', target:'_top', href:'/login?next=%2Fexpert', text:t('si_email') }));
+  acts.appendChild(h('a', { class:P.google ? 'btn ghost' : 'btn', target:'_top', href:'/login?next=%2Fexpert', text:t('si_email') }));
   acts.appendChild(h('a', { class:'btn ghost', target:'_top', href:'/register', text:t('si_register') }));
   acts.appendChild(h('button', { type:'button', class:'link', onclick:function(){ screen = 'wizard'; renderApp(); }, text:t('si_cancel') }));
   box.appendChild(acts); box.appendChild(h('div', { class:'save device', style:'margin-top:12px' }));
@@ -1141,13 +1289,13 @@ function renderApp(){
   app.appendChild(topBar()); app.appendChild(h('div', { id:'flash' })); paintFlash();
   if(view === 'profile'){ renderProfile(app); return; }
   app.appendChild(h('div', { id:'progress', class:'progress-block' })); renderProgress();
-  if(screen === 'wizard' || screen === 'overview'){ app.appendChild(whyPanel()); }
   var body = h('div', { id:'body' }); app.appendChild(body);
   if(screen === 'overview'){ renderOverview(body); }
   else if(screen === 'readonly'){ renderReadonly(body); }
   else if(screen === 'done'){ renderDone(body); }
   else if(screen === 'signin'){ renderSignin(body); }
   else { renderWizard(body); }
+  if(screen === 'wizard' || screen === 'overview'){ app.appendChild(whyPanel()); }
 }
 
 /* =====================================================================================
@@ -1317,6 +1465,11 @@ function renderProfile(app){
  * Start
  * ===================================================================================== */
 ['input', 'click', 'keydown'].forEach(function(ev){ document.addEventListener(ev, activity, true); });
+document.addEventListener('focusin', function(e){
+  var el = e.target;
+  if(!el || !el.tagName || window.innerWidth > 700){ return; }
+  if(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text')){ setTimeout(function(){ try{ el.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(x){} }, 350); }
+});
 window.addEventListener('pagehide', function(){
   if(view !== 'review' || !cur || readOnly()){ return; }
   if(!signedIn){ if(cur.a.software){ deviceWrite(); } return; }

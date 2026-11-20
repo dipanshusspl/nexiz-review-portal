@@ -27,6 +27,7 @@ export default async function SoftwarePage({ searchParams }: { searchParams: Pro
           <div className="grid2">
             <label>Name<input name="name" defaultValue={editing?.name} required /></label>
             <label>Display name (shown to the public, fix the casing e.g. Qaema, VOM)<input name="display_name" defaultValue={editing?.display_name ?? editing?.name} /></label>
+            <label>Arabic name (shown in Arabic mode and searched by experts)<input name="name_ar" defaultValue={editing?.name_ar ?? ''} dir="rtl" maxLength={120} /></label>
             <label>Category
               <select name="category_id" defaultValue={editing?.category_id} required>
                 <option value="">Select...</option>
@@ -55,7 +56,7 @@ export default async function SoftwarePage({ searchParams }: { searchParams: Pro
           {items.map((s) => (
             <tr key={s.id}>
               <td><EntityImage url={s.image_url} name={s.name} size={44} showName /></td>
-              <td><b>{s.display_name || s.name}</b><div className="muted small">{s.website}</div></td>
+              <td><b>{s.display_name || s.name}</b>{s.name_ar && <div className="muted small" dir="rtl">{s.name_ar}</div>}<div className="muted small">{s.website}</div></td>
               <td>{catById.get(s.category_id) ?? '?'}</td>
               <td className="actions">
                 {!manage && images && (
