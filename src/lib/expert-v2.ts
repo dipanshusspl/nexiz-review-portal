@@ -364,12 +364,22 @@ export async function loadMyReviews(user: CurrentUser): Promise<ReviewDTO[]> {
  * ========================================================================================== */
 export type SaveResult = { ok: true; review: ReviewDTO } | { ok: false; errors: Record<string, string> };
 
+/** Small in-memory cache for lists that almost never change (options, countries, functions). Admin edits show within 5 minutes. */
+const MEMO = new Map<string, { at: number; v: Promise<unknown> }>();
+function cached<T>(key: string, load: () => Promise<T>, ttlMs = 300_000): Promise<T> {
+  const hit = MEMO.get(key);
+  if (hit && Date.now() - hit.at < ttlMs) return hit.v as Promise<T>;
+  const v = load();
+  MEMO.set(key, { at: Date.now(), v });
+  v.catch(() => MEMO.delete(key));
+  return v;
+}
+
 export async function saveReview(user: CurrentUser, body: unknown): Promise<SaveResult> {
   const b = obj(body);
   const submit = b.submit === true;
   const lang = b.language === 'en' ? 'en' : 'ar';
-  const lk = await lookups();
-  const fns = await functionLists();
+  const [lk, fns] = await Promise.all([cached('lookups', lookups), cached('functionLists', functionLists)]);
 
   // which software is it, and is it in the catalogue?
   const rawSoftware = txt(obj(b.answers).software, 60);
@@ -479,12 +489,12 @@ export async function saveReview(user: CurrentUser, body: unknown): Promise<Save
     else await db().from('rv_pending_software').insert({ name: a.custom_name, function_group: a.custom_group, review_id: saved.id, user_id: user.id });
   }
 
-  // time to complete (client sends the active time it measured); stored once, on submit
+  // submit only: time to complete + notification email. Both run AFTER the response is sent, so the expert never waits for them.
   if (submit) {
-    try {
-      const total = Math.round(Number(obj(b.timing).total_ms));
-      if (Number.isFinite(total) && total > 0 && total < 4 * 3600_000) await db().from('rv_form_timing').insert({ form: 'expert', user_id: user.id, total_ms: total, field_ms: {} });
-    } catch { /* best effort */ }
+    const total = Math.round(Number(obj(b.timing).total_ms));
+    if (Number.isFinite(total) && total > 0 && total < 4 * 3600_000) {
+      after(async () => { try { await db().from('rv_form_timing').insert({ form: 'expert', user_id: user.id, total_ms: total, field_ms: {} }); } catch { /* best effort */ } });
+    }
 
     // tell the Nexiz team (env EXPERT_REVIEW_NOTIFY_EMAIL, one or more addresses separated by commas).
     // Sent AFTER the response is returned, so the expert never waits for Gmail. A failure is only logged.
@@ -504,8 +514,13 @@ export async function saveReview(user: CurrentUser, body: unknown): Promise<Save
     } catch (e) { console.error('expert review notification failed', e); }
   }
 
-  return { ok: true, review: (await loadMyReviews(user)).find((r) => r.id === saved.id) ?? {
-    id: saved.id, status: saved.status, step, answers: a, software_name: softwareName, reject_reason: null, updated_at: now,
+  // build the answer from the row we just wrote (no need to reload every review); only a rejected review needs its reason looked up
+  const review = saved.status === 'rejected'
+    ? (await loadMyReviews(user)).find((r) => r.id === saved.id)
+    : undefined;
+  return { ok: true, review: review ?? {
+    id: saved.id, status: (['draft', 'pending', 'approved', 'rejected'].includes(saved.status) ? saved.status : 'draft') as ReviewDTO['status'],
+    step: reviewStep(saved), answers: rowToAnswers(saved), software_name: softwareName, reject_reason: null, updated_at: saved.updated_at ?? now,
   } };
 }
 
