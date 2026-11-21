@@ -1,5 +1,6 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
+import { after } from 'next/server';
 import { db, IMAGE_BUCKET } from '@/lib/supabase/admin';
 import type { CurrentUser } from '@/lib/auth/current-user';
 import { extremeRatings } from '@/lib/review-rules';
@@ -485,14 +486,20 @@ export async function saveReview(user: CurrentUser, body: unknown): Promise<Save
       if (Number.isFinite(total) && total > 0 && total < 4 * 3600_000) await db().from('rv_form_timing').insert({ form: 'expert', user_id: user.id, total_ms: total, field_ms: {} });
     } catch { /* best effort */ }
 
-    // tell the Nexiz team (env EXPERT_REVIEW_NOTIFY_EMAIL, one or more addresses separated by commas). Never blocks or fails the submit.
+    // tell the Nexiz team (env EXPERT_REVIEW_NOTIFY_EMAIL, one or more addresses separated by commas).
+    // Sent AFTER the response is returned, so the expert never waits for Gmail. A failure is only logged.
     try {
       const to = (process.env.EXPERT_REVIEW_NOTIFY_EMAIL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
       if (to.length) {
         const link = `${await siteUrl()}/admin/moderation`;
         const product = softwareName || a.custom_name || '';
-        // same sender as the password-reset code: Gmail when it is set up, otherwise the Resend channel
-        await Promise.all(to.map((addr) => { const m = expertReviewSubmittedEmail(addr, user.fullName, user.email, product, a.overall, link); return gmailConfigured() ? sendGmail(m) : notify(m); }));
+        const who = { name: user.fullName, email: user.email }, overall = a.overall;
+        after(async () => {
+          try {
+            // same sender as the password-reset code: Gmail when it is set up, otherwise the Resend channel
+            await Promise.all(to.map((addr) => { const m = expertReviewSubmittedEmail(addr, who.name, who.email, product, overall, link); return gmailConfigured() ? sendGmail(m) : notify(m); }));
+          } catch (e) { console.error('expert review notification failed', e); }
+        });
       }
     } catch (e) { console.error('expert review notification failed', e); }
   }
