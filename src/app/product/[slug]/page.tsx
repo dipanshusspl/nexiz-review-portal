@@ -127,6 +127,14 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
           </div>
         </section>
 
+        {/* 6a who this suits (19 Nov: from the experts' new answers; no names shown) */}
+        {data.suitsList.length > 0 && (
+          <section className="blk">
+            <h2>{t.suits}</h2>
+            {data.suitsList.map((i) => <blockquote key={i.id}>{i.suits}</blockquote>)}
+          </section>
+        )}
+
         {/* 6 who should not buy, its own block (placed before the list so it is not buried) */}
         {data.whoNot.length > 0 && (
           <section className="blk nobuy">
@@ -169,7 +177,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
               </div>
               <div className="pair">
                 <div><div className="lbl">{t.worksWell}</div><p>{i.works || t.nothing}</p></div>
-                <div><div className="lbl">{t.doesnt}</div><p>{i.doesnt || t.nothing}</p></div>
+                <div><div className="lbl">{t.doesnt}</div><p>{i.doesnt || t.nothing}{i.doesnt && i.resolved ? <span className="muted small"> ({t.resolved}: {i.resolved})</span> : null}</p></div>
               </div>
               {i.date && <div className="muted small" style={{ marginTop: 8 }}>{new Date(i.date).toLocaleDateString(lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}</div>}
             </article>

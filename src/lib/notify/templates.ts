@@ -48,3 +48,18 @@ export function passwordResetOtpEmail(to: string, name: string, otp: string, min
     text: `Hello ${name},\nYour Nexiz password reset code is ${otp}. It is valid for ${minutes} minutes. If you did not ask for it, ignore this email.\n\nرمز إعادة تعيين كلمة المرور: ${otp} (صالح لمدة ${minutes} دقائق).`,
   };
 }
+
+/** Sent to the Nexiz team (env EXPERT_REVIEW_NOTIFY_EMAIL) when an expert submits a review for moderation. */
+export function expertReviewSubmittedEmail(to: string, expertName: string, expertEmail: string, product: string, overall: string, url: string): Message {
+  const n = escapeHtml(expertName || '-'), e = escapeHtml(expertEmail || '-'), p = escapeHtml(product || '-'), o = escapeHtml(overall || '-');
+  return {
+    to, subject: `New expert review submitted: ${product}`,
+    html: wrap(
+      `<p>An expert submitted a review for moderation.</p>` +
+      `<table style="border-collapse:collapse"><tr><td style="padding:2px 12px 2px 0;color:#53645d">Expert</td><td><b>${n}</b> (${e})</td></tr>` +
+      `<tr><td style="padding:2px 12px 2px 0;color:#53645d">Software</td><td><b>${p}</b></td></tr>` +
+      `<tr><td style="padding:2px 12px 2px 0;color:#53645d">Overall rating</td><td>${o}</td></tr></table>` +
+      btn(url, 'Open moderation')),
+    text: `New expert review submitted.\nExpert: ${expertName} (${expertEmail})\nSoftware: ${product}\nOverall rating: ${overall}\nModeration: ${url}`,
+  };
+}

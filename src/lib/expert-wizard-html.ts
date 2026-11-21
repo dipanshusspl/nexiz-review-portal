@@ -177,7 +177,7 @@ lang = lang === 'en' ? 'en' : 'ar';
 /* ---------- text (Arabic first, English second). Numerals are always 0-9. ---------- */
 var D = {
   title_review:['مراجعاتك','Your reviews'], title_profile:['ملفك المهني','Your professional profile'],
-  step1:['النظام','The system'], step2:['منشأتك وإعداد النظام','Your business and setup'], step3:['الامتثال ورأيك','Compliance and your view'], step4:['التقييم والإرسال','Ratings and submit'],
+  step1:['النظام','The system'], step2:['النظام وإعداد منشأتك','Your business and setup'], step3:['تجربتك مع النظام والامتثال','Compliance and your view'], step4:['التقييم والإرسال','Ratings and submit'],
   stepline:['الخطوة {0} من 4 \u00b7 {1}','Step {0} of 4 \u00b7 {1}'],
   revs:['مراجعاتك:','Your reviews:'], cnt:['{0} مسودات \u00b7 {1} مرسلة','{0} drafts \u00b7 {1} submitted'], dup_open:['لديك مراجعة لهذا النظام بالفعل، فتحناها لك.','You already have a review of this software, so we opened it.'],
   st_done:['مكتملة','Done'], st_progress:['قيد الإكمال','In progress'], st_todo:['لم تبدأ','Not started'],

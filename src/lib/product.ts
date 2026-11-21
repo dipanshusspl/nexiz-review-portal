@@ -1,6 +1,7 @@
 import 'server-only';
 import { db } from '@/lib/supabase/admin';
 import { chipStatus, type Answer } from '@/lib/chip-status'; // Added by Prachi, 2026-11-03
+import { SIZES_V2, RESOLVED } from '@/lib/expert-v2'; // 19 Nov: labels for the new expert answers
 import { recommendSummary, scoreSummary, sizeBucket, top } from '@/lib/score-math'; // Added by Prachi, 2026-11-05
 export { sizeBucket }; // Added by Prachi, 2026-11-05: other files may still import it from here
 
@@ -17,6 +18,7 @@ export type Item = {
   recommend: boolean | null; role: string; size: string | null; duration: string | null; still: boolean | null;
   works: string; doesnt: string; compliance: Record<string, Status>; features: string[]; golive: string | null; cost: string | null;
   whoNot: string | null; movedTo: string | null; roleCode: string | null;
+  suits: string | null; resolved: string | null;
 };
 export type Filters = { type?: string; size?: string; role?: string; duration?: string; still?: string };
 
@@ -30,7 +32,7 @@ const EXP_COMP: Record<string, Status> = { worked: 'ok', custom: 'partial', fail
 // Added by Prachi, 2026-11-05 (gap 6.13): the columns read from the review tables. If the database refuses one of them (for example a column
 // was renamed), the problem is printed in the server log and the page falls back to all columns instead of showing no reviews.
 const PUB_COLS = 'id,created_at,rating_overall,would_recommend,reviewer_role,company_size,usage_duration,still_using,pros,cons,zatca_status,moved_to_software_id';
-const EXP_COLS = 'id,profile_id,created_at,overall_rating,recommended_code,company_size_code,usage_duration_code,still_using_code,main_problem,biggest_difficulty,wishlist,compliance,moved_to_software,features_used,golive_time_code,annual_cost_code,who_should_not_buy';
+const EXP_COLS = 'id,profile_id,created_at,overall_rating,recommended_code,company_size_code,usage_duration_code,still_using_code,main_problem,biggest_difficulty,wishlist,compliance,moved_to_software,features_used,golive_time_code,annual_cost_code,who_should_not_buy,extra';
 async function readReviews(table: string, cols: string, filter: (q: any) => any) {
   const first = await filter(db().from(table).select(cols));
   if (!first.error) return first;
@@ -68,7 +70,7 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
     items.push({
       id: 'u' + r.id, kind: 'user', date: r.created_at ?? '', score: r.rating_overall, recommend: r.would_recommend ?? null,
       role: r.reviewer_role ?? '', roleCode: r.reviewer_role ?? null, size: r.company_size ?? null, duration: r.usage_duration ?? null, still: r.still_using ?? null,
-      works: r.pros ?? '', doesnt: r.cons ?? '', compliance: comp, features: [], golive: null, cost: null, whoNot: null, movedTo: r.moved_to_software_id ?? null,
+      works: r.pros ?? '', doesnt: r.cons ?? '', compliance: comp, features: [], golive: null, cost: null, whoNot: null, movedTo: r.moved_to_software_id ?? null, suits: null, resolved: null,
     });
   }
   const yes = new Set(((lkRows ?? []) as Row[]).filter((o) => o.group_code === 'recommend' && /^(yes|نعم)/i.test(o.name_en ?? '')).map((o) => o.code));
@@ -79,6 +81,15 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
     if (!p || p.status !== 'submitted') continue; // an expert profile must itself be submitted
     const comp: Record<string, Status> = {};
     for (const [k, v] of Object.entries((r.compliance ?? {}) as Record<string, string>)) if (EXP_COMP[v]) comp[k] = EXP_COMP[v];
+    const ex = (r.extra && typeof r.extra === 'object' ? r.extra : {}) as Record<string, any>;
+    const pick = (list: { code: string; en: string; ar: string }[], c: string) => { const o = list.find((x) => x.code === c); return o ? (lang === 'ar' ? o.ar : o.en) : ''; };
+    const suitsParts = [
+      ...(Array.isArray(ex.suits_types) ? ex.suits_types : []).map((c: string) => label.get(c) || ''),
+      ...(Array.isArray(ex.suits_sizes) ? ex.suits_sizes : []).map((c: string) => pick(SIZES_V2, c)),
+    ].filter(Boolean);
+    const suitsWhy = typeof ex.suits_why === 'string' ? ex.suits_why.trim() : '';
+    const suits = suitsParts.length || suitsWhy ? [suitsParts.join(' · '), suitsWhy].filter(Boolean).join(' — ') : null;
+    const resolved = ex.no_problems === true ? null : (ex.problem_resolved ? pick(RESOLVED, ex.problem_resolved) || null : null);
     const moved = typeof r.moved_to_software === 'string' && swName.has(r.moved_to_software) ? r.moved_to_software : null;
     items.push({
       id: 'e' + r.id, kind: 'expert', date: r.created_at ?? '', score: r.overall_rating,
@@ -86,9 +97,10 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
       role: (p.professional_role_code && roleLabel.get(p.professional_role_code)) || p.professional_role_other || '', roleCode: null,
       size: sizeBucket(enLabel.get(r.company_size_code)), duration: r.usage_duration_code ?? null,
       still: noStill.has(r.still_using_code) ? false : yesStill.has(r.still_using_code) ? true : null,
-      works: r.main_problem ?? '', doesnt: r.biggest_difficulty || r.wishlist || '', compliance: comp,
+      // 19 Nov: the new answers live in `extra`; older reviews keep using main_problem / wishlist. The reviewer's name is never read here (anonymity).
+      works: ex.accomplished || r.main_problem || '', doesnt: r.biggest_difficulty || r.wishlist || '', compliance: comp,
       features: Array.isArray(r.features_used) ? r.features_used : [], golive: r.golive_time_code ?? null, cost: r.annual_cost_code ?? null,
-      whoNot: r.who_should_not_buy ?? null, movedTo: moved,
+      whoNot: r.who_should_not_buy ?? null, movedTo: moved, suits, resolved,
     });
   }
 
@@ -123,6 +135,7 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
 
   // ---- who should not buy ----
   const whoNot = experts.filter((i) => i.whoNot).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const suitsList = experts.filter((i) => i.suits).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
 
   // ---- reviews list with filters (a filter excludes reviews that lack that field) ----
   let list = items.slice();
@@ -142,6 +155,6 @@ export async function loadProduct(slug: string, f: Filters, lang: 'en' | 'ar') {
     cost: cost && { ...cost, base: experts.filter((i) => i.cost).length },
     features, featuresBase: experts.filter((i) => i.features.length).length,
     leavers: leavers.length, movedTop: movedTop && { ...movedTop, name: swName.get(movedTop.value)?.name ?? '' },
-    whoNot, list,
+    whoNot, suitsList, list,
   };
 }

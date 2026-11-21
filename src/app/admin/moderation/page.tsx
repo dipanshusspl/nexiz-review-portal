@@ -5,11 +5,14 @@ import { ESCALATION_LABEL } from '@/lib/review-rules';
 import { db } from '@/lib/supabase/admin';
 import { getBadgesByProfileId, getReviewCountsByProfileId } from '@/lib/badges';
 import UserBadge from '@/components/UserBadge';
+import { GOALS, LAST_USED, RESOLVED, SIZES_V2, STOP_REASONS } from '@/lib/expert-v2';
 
 export const dynamic = 'force-dynamic';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
 const SLA_HOURS = 48;
+// 19 Nov: readable text for the new expert answers (stored as codes in the review's "extra" column)
+const lbl = (list: { code: string; en: string }[], codes: unknown) => (Array.isArray(codes) ? codes : codes ? [codes] : []).map((c: string) => list.find((o) => o.code === c)?.en ?? c).join(', ');
 
 export default async function Moderation({ searchParams }: { searchParams: Promise<{ tab?: string; ok?: string; error?: string }> }) {
   await requirePermission('reviews.moderate');
@@ -85,8 +88,13 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
                   {row.main_problem && <div><b className="small">Problem it solved:</b> {row.main_problem}</div>}
                   <div><b className="small">Role when used:</b> {row.role_when_used || '—'} · <b className="small">Usage:</b> {row.usage_duration_code || '—'} · <b className="small">Business:</b> {row.business_type_code || '—'} / {row.company_size_code || '—'}</div>
                   {!row.software_id && <div className="small" style={{ color: '#8a5304' }}>Software typed by the expert (not in the catalogue yet): <b>{row.custom_software_name}</b>. Match or create it under Typed software.</div>}
-                  <div><b className="small">Biggest difficulty:</b> {row.biggest_difficulty || '—'}</div>
-                  <div><b className="small">Improvement wish:</b> {row.wishlist}</div>
+                  {row.extra?.main_goals?.length > 0 && <div><b className="small">Main goal:</b> {lbl(GOALS, row.extra.main_goals)}{row.extra.main_goal_other ? ` (${row.extra.main_goal_other})` : ''}</div>}
+                  {row.extra?.accomplished && <div><b className="small">What it helped accomplish:</b> {row.extra.accomplished}</div>}
+                  <div><b className="small">Biggest problem:</b> {row.extra?.no_problems ? 'No significant problems' : (row.biggest_difficulty || '—')}{!row.extra?.no_problems && row.extra?.problem_resolved ? ` · Resolved: ${lbl(RESOLVED, row.extra.problem_resolved)}` : ''}</div>
+                  {row.extra?.problem_how && <div><b className="small">How it was resolved:</b> {row.extra.problem_how}</div>}
+                  {row.wishlist && <div><b className="small">Improvement wish (older review):</b> {row.wishlist}</div>}
+                  {(row.extra?.suits_sizes?.length > 0 || row.extra?.suits_types?.length > 0) && <div><b className="small">Suits:</b> {lbl(SIZES_V2, row.extra.suits_sizes)} · {(row.extra.suits_types ?? []).join(', ')}{row.extra.suits_why ? ` — ${row.extra.suits_why}` : ''}</div>}
+                  {row.extra?.stop_reasons?.length > 0 && <div><b className="small">Why they stopped:</b> {lbl(STOP_REASONS, row.extra.stop_reasons)}{row.extra.stop_other ? ` (${row.extra.stop_other})` : ''} · <b className="small">Last used:</b> {lbl(LAST_USED, row.extra.last_used) || '—'}</div>}
                   <div><b className="small">Who should not buy:</b> {row.who_should_not_buy}</div>
                   <div><b className="small">Compliance:</b> {Object.entries(row.compliance ?? {}).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}</div>
                   <div><b className="small">Functions used:</b> {(row.features_used ?? []).join(', ') || '—'}{row.features_other ? ` (other: ${row.features_other})` : ''} · <b className="small">Anonymous:</b> {String(row.anonymous)}</div>

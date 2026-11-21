@@ -3,6 +3,9 @@ import { createHash } from 'node:crypto';
 import { db, IMAGE_BUCKET } from '@/lib/supabase/admin';
 import type { CurrentUser } from '@/lib/auth/current-user';
 import { extremeRatings } from '@/lib/review-rules';
+import { notify, siteUrl } from '@/lib/notify';
+import { gmailConfigured, sendGmail } from '@/lib/notify/gmail';
+import { expertReviewSubmittedEmail } from '@/lib/notify/templates';
 import {
   ExpertInputError, SYSTEMS, COMPLIANCE_ROWS, COMPLIANCE_STATUS, UUID, all, arr, httpUrl, lookups, normalize, nul, obj, rating, resolvePhoto, txt, year,
 } from '@/lib/expert';
@@ -64,9 +67,8 @@ const GOAL_SET = new Set(GOALS.map((o) => o.code));
 const RESOLVED_SET = new Set(RESOLVED.map((o) => o.code));
 const STOP_SET = new Set(STOP_REASONS.map((o) => o.code));
 const LAST_SET = new Set(LAST_USED.map((o) => o.code));
-/** Categories that are NOT shown in the expert portal (HR, CRM, e-commerce, logistics). */
-const HIDDEN_CATEGORY_SLUGS = new Set(['hr-payroll', 'crm', 'e-commerce', 'ecommerce', 'logistics']);
-const HIDDEN_CATEGORY_NAMES = new Set(['hr & payroll', 'hr and payroll', 'hr', 'crm', 'e-commerce', 'ecommerce', 'logistics']);
+/** Phase 1: the expert portal reviews ONLY these three categories (by slug). Everything else (HR, CRM, e-commerce, logistics, payments ...) stays on the main platform only. */
+const PHASE1_CATEGORIES: Record<string, FnGroup> = { 'erp': 'erp', 'pos-restaurant': 'pos', 'accounting-invoicing': 'accounting' };
 const GROUP_ORDER: Record<string, number> = { pos: 0, erp: 1, accounting: 2 };
 
 export type FnGroup = 'accounting' | 'erp' | 'pos';
@@ -111,9 +113,8 @@ export async function loadReviewCatalog() {
     functionLists(),
     all('rv_reject_reasons', 'code,name_en,name_ar'),
   ]);
-  const grp = new Map<string, FnGroup>(cats.map((c) => [c.id, (FN_GROUPS.includes(c.function_group) ? c.function_group : 'accounting') as FnGroup]));
-  // only live categories that belong to POS / ERP / Accounting are offered to experts
-  const shown = new Set(cats.filter((c) => c.is_live && !HIDDEN_CATEGORY_SLUGS.has(String(c.slug ?? '')) && !HIDDEN_CATEGORY_NAMES.has(String(c.name_en ?? '').trim().toLowerCase()) && (!c.function_group || FN_GROUPS.includes(c.function_group))).map((c) => c.id));
+  const grp = new Map<string, FnGroup>(cats.map((c) => [c.id, PHASE1_CATEGORIES[String(c.slug ?? '')] ?? ((FN_GROUPS.includes(c.function_group) ? c.function_group : 'accounting') as FnGroup)]));
+  const shown = new Set(cats.filter((c) => c.is_live && PHASE1_CATEGORIES[String(c.slug ?? '')]).map((c) => c.id));
   const options: Record<string, Opt[]> = {};
   for (const o of lk.options) (options[o.group_code] ??= []).push({ code: o.code, ar: o.ar, en: o.en });
   const pick = (g: string) => options[g] ?? [];
@@ -483,6 +484,17 @@ export async function saveReview(user: CurrentUser, body: unknown): Promise<Save
       const total = Math.round(Number(obj(b.timing).total_ms));
       if (Number.isFinite(total) && total > 0 && total < 4 * 3600_000) await db().from('rv_form_timing').insert({ form: 'expert', user_id: user.id, total_ms: total, field_ms: {} });
     } catch { /* best effort */ }
+
+    // tell the Nexiz team (env EXPERT_REVIEW_NOTIFY_EMAIL, one or more addresses separated by commas). Never blocks or fails the submit.
+    try {
+      const to = (process.env.EXPERT_REVIEW_NOTIFY_EMAIL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+      if (to.length) {
+        const link = `${await siteUrl()}/admin/moderation`;
+        const product = softwareName || a.custom_name || '';
+        // same sender as the password-reset code: Gmail when it is set up, otherwise the Resend channel
+        await Promise.all(to.map((addr) => { const m = expertReviewSubmittedEmail(addr, user.fullName, user.email, product, a.overall, link); return gmailConfigured() ? sendGmail(m) : notify(m); }));
+      }
+    } catch (e) { console.error('expert review notification failed', e); }
   }
 
   return { ok: true, review: (await loadMyReviews(user)).find((r) => r.id === saved.id) ?? {

@@ -9,7 +9,7 @@ const en = {
   ofReviews: 'of', expertReviews: 'expert reviews', allReviews: 'reviews', notEnough: 'Not enough data yet',
   reviews: 'Reviews', filterType: 'Review type', filterSize: 'Company size', filterRole: 'Role', filterDuration: 'Time used', filterStill: 'Still using',
   all: 'All', expertBadge: 'Verified expert', userBadge: 'User', still: 'Still using', notStill: 'Stopped using', worksWell: 'What works well', doesnt: "What doesn't",
-  nothing: 'Nothing reported', noReviews: 'No published reviews yet.', apply: 'Apply', whoNot: 'Who should not buy this',
+  nothing: 'Nothing reported', noReviews: 'No published reviews yet.', apply: 'Apply', whoNot: 'Who should not buy this', suits: 'Who this suits', resolved: 'Resolved',
   movedOff: 'have moved off this product', mostOftenTo: 'most often to', of: 'of', reviewers: 'reviewers', moved: 'What reviewers moved to',
   login: 'Log in', reviewIt: 'Review software', yes: 'Yes', no: 'No', features_lbl: 'features', home: 'Review portal',
   calcVersion: 'Calculation version', calcAt: 'stored', calcMatch: 'matches the current reviews', calcOlder: 'reviews changed since', // Added by Prachi, 2026-11-10 (gap 6.5)
@@ -28,7 +28,7 @@ const ar: typeof en = {
   ofReviews: 'من', expertReviews: 'تقييمات خبراء', allReviews: 'تقييمًا', notEnough: 'لا بيانات كافية بعد',
   reviews: 'التقييمات', filterType: 'نوع التقييم', filterSize: 'حجم الشركة', filterRole: 'الدور', filterDuration: 'مدة الاستخدام', filterStill: 'ما زال يستخدمه',
   all: 'الكل', expertBadge: 'خبير موثّق', userBadge: 'مستخدم', still: 'ما زال يستخدمه', notStill: 'توقف عن استخدامه', worksWell: 'ما الذي يعمل جيدًا', doesnt: 'وما الذي لا يعمل',
-  nothing: 'لا شيء مذكور', noReviews: 'لا توجد تقييمات منشورة بعد.', apply: 'تطبيق', whoNot: 'من لا ينبغي أن يشتري هذا المنتج',
+  nothing: 'لا شيء مذكور', noReviews: 'لا توجد تقييمات منشورة بعد.', apply: 'تطبيق', whoNot: 'من لا ينبغي أن يشتري هذا المنتج', suits: 'لمن يناسب هذا النظام', resolved: 'تم الحل',
   movedOff: 'انتقلوا عن هذا المنتج', mostOftenTo: 'غالبًا إلى', of: 'من', reviewers: 'مراجعين', moved: 'إلى ماذا انتقل المراجعون',
   login: 'تسجيل الدخول', reviewIt: 'قيّم برنامجًا', yes: 'نعم', no: 'لا', features_lbl: 'وظائف', home: 'بوابة التقييم',
   calcVersion: 'إصدار الحساب', calcAt: 'حُفظت', calcMatch: 'مطابقة للتقييمات الحالية', calcOlder: 'تغيّرت التقييمات منذ ذلك', // Added by Prachi, 2026-11-10 (gap 6.5)
