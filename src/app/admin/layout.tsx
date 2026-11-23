@@ -12,6 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin', label: 'Dashboard', show: true },
     { href: '/admin/roles', label: 'Roles', show: can(user, 'roles.manage') },
     { href: '/admin/users', label: 'Users', show: can(user, 'users.manage') },
+    { href: '/admin/moderation', label: 'Moderation', show: can(user, 'reviews.moderate') },
     { href: '/admin/categories', label: 'Categories', show: can(user, 'categories.manage') || can(user, 'images.manage') },
     { href: '/admin/software', label: 'Software', show: can(user, 'software.manage') || can(user, 'images.manage') },
     // { href: '/admin/pending-software', label: 'Typed software', show: can(user, 'software.manage') },

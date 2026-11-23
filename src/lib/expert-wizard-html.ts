@@ -212,7 +212,7 @@ var D = {
   q_functions:['ما الوظائف التي استخدمتها بنفسك في هذا النظام؟','Which functions have you personally used?'],
   fn_first:['اختر النظام أولًا لتظهر وظائفه.','Choose the software first to see its functions.'],
   select_all:['تحديد الكل','Select all'], other_specify:['أخرى (يرجى التحديد)','Other (please specify)'], fn_other_ph:['اسم الوظيفة','Name of the function'],
-  q_btype:['نوع المنشأة','Business type'], q_bname:['اسم المنشأة','Business name'], bname_note:['يُستخدم للتحقق فقط ولا يُعرض للعامة.','Used for verification only, not shown publicly.'],
+  q_btype:['نوع المنشأة','Business type'], q_industry:['القطاع الذي تعمل فيه المنشأة','Industry'], q_bname:['اسم المنشأة','Business name'], bname_note:['يُستخدم للتحقق فقط ولا يُعرض للعامة.','Used for verification only, not shown publicly.'],
   q_size:['حجم المنشأة','Company size'], q_deciders:['من شارك في قرار اختيار النظام؟','Who took part in choosing the software?'],
   q_golive:['كم استغرق تشغيل النظام فعليًا؟','How long did go-live take?'], q_longer:['هل استغرق أطول مما قيل لك؟','Was it longer than you were told?'], q_impl:['من تولّى تنفيذ النظام؟','Who did the implementation?'],
   q_integ:['ما الأنظمة أو التطبيقات التي ربطتها بنفسك بهذا النظام؟','Which systems or applications have you personally connected to this software?'],
@@ -303,7 +303,7 @@ var D = {
   e_ratings:['اختر تقييمًا، أو «لا أستطيع التقييم».','Choose a rating, or \u201cUnable to rate\u201d.'],
   e_declaration:['يرجى تأكيد الإقرار لإرسال المراجعة.','Please confirm the declaration to submit.'],
   e_required:['هذا الحقل مطلوب.','This field is required.'],
-  e_btype:['اختر نوع المنشأة.','Choose the business type.'], e_bname:['اكتب اسم المنشأة.','Write the business name.'], e_size:['اختر حجم المنشأة.','Choose the company size.'],
+  e_btype:['اختر نوع المنشأة.','Choose the business type.'], e_industry:['اختر القطاع.','Choose the industry.'], e_bname:['اكتب اسم المنشأة.','Write the business name.'], e_size:['اختر حجم المنشأة.','Choose the company size.'],
   e_deciders:['اختر من شارك في قرار اختيار النظام.','Choose who took part in choosing the software.'], e_golive:['اختر المدة التي استغرقها تشغيل النظام.','Choose how long go-live took.'],
   e_longer:['اختر هل استغرق أطول مما قيل لك.','Choose whether it took longer than you were told.'], e_cost:['اختر التكلفة السنوية التقريبية.','Choose the approximate yearly cost.'],
   e_prev:['اكتب ما كنت تستخدمه قبل ذلك، أو اختر «لا شيء / جداول بيانات».','Enter what you used before, or choose \u201cNothing / spreadsheets\u201d.'],
@@ -500,7 +500,7 @@ var flashMsg = ST.signinFailed ? { kind: 'err', text: 'si_failed' } : null;
 function blank(){
   return { software:'', custom_name:'', custom_group:'accounting', role:'', duration:'', functions:[], functions_other:'',
     main_goals:[], main_goal_other:'',
-    business_type:'', business_name:'', company_size:'', deciders:[], golive_time:'', longer_than_told:'', implementer:'',
+    business_type:'', industry:'', business_name:'', company_size:'', deciders:[], golive_time:'', longer_than_told:'', implementer:'',
     integrations:[], no_integrations:false, compliance:{}, accomplished:'', problem:'', no_problems:false, problem_resolved:'', problem_how:'',
     suits_sizes:[], suits_types:[], suits_why:'', who_not_buy:'', annual_cost:'', previous_software:'',
     still_using:'', moved_to:'', stop_reasons:[], stop_other:'', last_used:'',
@@ -534,7 +534,7 @@ function isNo(code){ var o = optOf('still_using', code); return !!o && (o.ar ===
 
 /* ---------- validation: the same rules as the server (the server is the one that decides) ---------- */
 var STEP1 = ['software','custom_name','role','duration','functions','functions_other'];
-var STEP2 = ['main_goals','main_goal_other','business_type','business_name','company_size','deciders','golive_time','longer_than_told','implementer','integrations'];
+var STEP2 = ['main_goals','main_goal_other','business_type','industry','business_name','company_size','deciders','golive_time','longer_than_told','implementer','integrations'];
 var STEP4 = ['ratings','choose_again','recommend','relationship','relationship_detail','declaration'];
 function stepOf(f){ var b = String(f).split('.')[0]; return STEP1.indexOf(b) >= 0 ? 1 : STEP4.indexOf(b) >= 0 ? 4 : STEP2.indexOf(b) >= 0 ? 2 : 3; }
 function validateAll(a){
@@ -549,6 +549,7 @@ function validateAll(a){
   if(!a.main_goals.length){ e.main_goals = 'goal'; }
   else if(a.main_goals.indexOf('other') >= 0){ if(!a.main_goal_other){ e.main_goal_other = 'goal_other'; } else if(badShort(a.main_goal_other)){ e.main_goal_other = 'short'; } }
   if(!a.business_type){ e.business_type = 'btype'; }
+  if(!a.industry){ e.industry = 'industry'; }
   short('business_name', a.business_name, 'bname');
   if(!a.company_size){ e.company_size = 'size'; }
   if(!a.deciders.length){ e.deciders = 'deciders'; }
@@ -1046,6 +1047,7 @@ function step2(form){
   form.appendChild(fieldWrap('main_goals', t('q_goal'), goalBox, { req:true, wide:true }));
   var g = h('div', { class:'grid', style:'margin-top:14px' });
   g.appendChild(fieldWrap('business_type', t('q_btype'), sel('business_type', CAT.OPTIONS.business_type), { req:true }));
+  g.appendChild(fieldWrap('industry', t('q_industry'), sel('industry', CAT.INDUSTRIES), { req:true }));
   g.appendChild(fieldWrap('business_name', t('q_bname'), tInput('business_name', { nomic:true }), { req:true, note:t('bname_note') }));
   g.appendChild(fieldWrap('company_size', t('q_size'), radios('company_size', CAT.SIZES), { req:true, wide:true }));
   g.appendChild(fieldWrap('deciders', t('q_deciders'), checks('deciders', CAT.OPTIONS.decision_maker), { req:true, wide:true }));

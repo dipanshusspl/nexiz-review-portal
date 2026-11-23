@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Flash from '@/components/Flash';
 import { approveReview, flagDispute, rejectReview } from '@/app/actions/moderation';
 import { requirePermission } from '@/lib/auth/current-user';
@@ -5,7 +6,7 @@ import { ESCALATION_LABEL } from '@/lib/review-rules';
 import { db } from '@/lib/supabase/admin';
 import { getBadgesByProfileId, getReviewCountsByProfileId } from '@/lib/badges';
 import UserBadge from '@/components/UserBadge';
-import { GOALS, LAST_USED, RESOLVED, SIZES_V2, STOP_REASONS } from '@/lib/expert-v2';
+import { GOALS, INDUSTRIES, LAST_USED, RESOLVED, SIZES_V2, STOP_REASONS } from '@/lib/expert-v2';
 
 export const dynamic = 'force-dynamic';
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -30,7 +31,7 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
   const profIds = [...new Set(((exp.data ?? []) as Row[]).map((r) => r.profile_id))];
   const [{ data: users }, { data: profs }] = await Promise.all([
     userIds.length ? db().from('rv_users').select('id,full_name,email').in('id', userIds) : Promise.resolve({ data: [] as Row[] }),
-    profIds.length ? db().from('rv_expert_profiles').select('id,full_name,email,status').in('id', profIds) : Promise.resolve({ data: [] as Row[] }),
+    profIds.length ? db().from('rv_expert_profiles').select('id,full_name,email,phone,status').in('id', profIds) : Promise.resolve({ data: [] as Row[] }),
   ]);
   const uMap = new Map<string, Row>(((users ?? []) as Row[]).map((u) => [u.id, u]));
   const pMap = new Map<string, Row>(((profs ?? []) as Row[]).map((p) => [p.id, p]));
@@ -67,8 +68,10 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
             <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <span className="badge">{kind === 'expert' ? 'Expert' : row.source === 'field' ? 'Field user' : 'User'}</span>
               <b>{swName.get(row.software_id) ?? row.custom_software_name ?? 'Unknown product'}</b>
-              <span className="muted small">by {author?.full_name || '—'}{kind === 'expert' && <UserBadge badge={badges.get(row.profile_id) ?? null} size={16} />} ({author?.email || '—'}){row.source === 'field' && uMap.get(row.collected_by) ? ` · collected by ${uMap.get(row.collected_by)!.full_name}` : ''}</span>
+              <span className="muted small">by {author?.full_name || '—'}{kind === 'expert' && <UserBadge badge={badges.get(row.profile_id) ?? null} size={16} />} ({author?.email || '—'}){kind === 'expert' && author?.phone ? ` · ${author.phone}` : ''}{row.source === 'field' && uMap.get(row.collected_by) ? ` · collected by ${uMap.get(row.collected_by)!.full_name}` : ''}</span>
               {kind === 'expert' && <span className="muted small">{approvedCounts.get(row.profile_id) ?? 0} approved review(s) so far</span>}
+              {kind === 'expert' && <Link href={`/admin/experts/${row.profile_id}`} target="_blank" className="btn-ghost">View expert profile</Link>}
+              {kind === 'expert' && <Link href={`/admin/expert-reviews/${id}`} target="_blank" className="btn-ghost">View full answers</Link>}
               <span className="muted small">rating {rating(row) ?? '—'}/5</span>
               {tab === 'pending' && <span className="small" style={{ color: age > SLA_HOURS ? '#8c2f2f' : undefined }}>{age}h waiting{age > SLA_HOURS ? ' (past 48h target)' : ''}</span>}
             </div>
@@ -88,6 +91,7 @@ export default async function Moderation({ searchParams }: { searchParams: Promi
                   {row.main_problem && <div><b className="small">Problem it solved:</b> {row.main_problem}</div>}
                   <div><b className="small">Role when used:</b> {row.role_when_used || '—'} · <b className="small">Usage:</b> {row.usage_duration_code || '—'} · <b className="small">Business:</b> {row.business_type_code || '—'} / {row.company_size_code || '—'}</div>
                   {!row.software_id && <div className="small" style={{ color: '#8a5304' }}>Software typed by the expert (not in the catalogue yet): <b>{row.custom_software_name}</b>. Match or create it under Typed software.</div>}
+                  {row.extra?.industry && <div><b className="small">Industry:</b> {lbl(INDUSTRIES, row.extra.industry)}</div>}
                   {row.extra?.main_goals?.length > 0 && <div><b className="small">Main goal:</b> {lbl(GOALS, row.extra.main_goals)}{row.extra.main_goal_other ? ` (${row.extra.main_goal_other})` : ''}</div>}
                   {row.extra?.accomplished && <div><b className="small">What it helped accomplish:</b> {row.extra.accomplished}</div>}
                   <div><b className="small">Biggest problem:</b> {row.extra?.no_problems ? 'No significant problems' : (row.biggest_difficulty || '—')}{!row.extra?.no_problems && row.extra?.problem_resolved ? ` · Resolved: ${lbl(RESOLVED, row.extra.problem_resolved)}` : ''}</div>

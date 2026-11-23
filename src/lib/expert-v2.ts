@@ -43,6 +43,17 @@ export const GOALS: Opt[] = [
   { code: 'goal_replace', en: 'Replacing a system that no longer fit', ar: 'استبدال نظام سابق لم يعد مناسبًا' },
   { code: 'other', en: 'Other (please specify)', ar: 'أخرى (يرجى التحديد)' },
 ];
+/** Industry the business works in (22 Nov). Stored in the review's "extra" column as extra.industry. */
+export const INDUSTRIES: Opt[] = [
+  { code: 'ind_retail', en: 'Retail and wholesale', ar: 'التجزئة والجملة' },
+  { code: 'ind_fnb', en: 'Restaurants, cafes and hospitality', ar: 'المطاعم والمقاهي والضيافة' },
+  { code: 'ind_construction', en: 'Contracting, construction and real estate', ar: 'المقاولات والإنشاءات والعقار' },
+  { code: 'ind_manufacturing', en: 'Manufacturing and industrial', ar: 'التصنيع والصناعة' },
+  { code: 'ind_health', en: 'Healthcare and pharmacy', ar: 'الرعاية الصحية والصيدليات' },
+  { code: 'ind_logistics', en: 'Logistics, transport and trading', ar: 'الخدمات اللوجستية والنقل والتجارة' },
+  { code: 'ind_services', en: 'Professional and other services', ar: 'الخدمات المهنية وخدمات أخرى' },
+  { code: 'ind_other', en: 'Other', ar: 'أخرى' },
+];
 export const RESOLVED: Opt[] = [
   { code: 'res_full', en: 'Yes, fully', ar: 'نعم بالكامل' }, { code: 'res_part', en: 'Partly', ar: 'جزئيًا' }, { code: 'res_no', en: 'No', ar: 'لا' },
 ];
@@ -65,6 +76,7 @@ export const COMPLIANCE_STATUS_V2: Opt[] = [
 ];
 const COMPLIANCE_ROWS_V2: Opt[] = COMPLIANCE_ROWS.map((r) => r.code === 'zatca' ? { ...r, ar: 'الفوترة الإلكترونية (زاتكا، المرحلة الثانية)' } : r);
 const GOAL_SET = new Set(GOALS.map((o) => o.code));
+const INDUSTRY_SET = new Set(INDUSTRIES.map((o) => o.code));
 const RESOLVED_SET = new Set(RESOLVED.map((o) => o.code));
 const STOP_SET = new Set(STOP_REASONS.map((o) => o.code));
 const LAST_SET = new Set(LAST_USED.map((o) => o.code));
@@ -126,7 +138,7 @@ export async function loadReviewCatalog() {
   return {
     SOFTWARE: software,
     FUNCTIONS: fns,
-    DURATIONS: DURATIONS_V2, SIZES: SIZES_V2, GOALS, RESOLVED, STOP_REASONS, LAST_USED,
+    DURATIONS: DURATIONS_V2, SIZES: SIZES_V2, GOALS, INDUSTRIES, RESOLVED, STOP_REASONS, LAST_USED,
     OPTIONS: {
       business_type: pick('business_type'), decision_maker: pick('decision_maker'), golive_time: pick('golive_time'),
       longer_than_told: pick('longer_than_told'), implementer: pick('implementer'), annual_cost: pick('annual_cost'),
@@ -180,6 +192,7 @@ function sanitizeAnswers(raw: unknown, lk: Awaited<ReturnType<typeof lookups>>, 
     still_using: stillCode, moved_to: stopped ? txt(a.moved_to, 120) : '',
     // 19 Nov questions (stored together in the "extra" column)
     main_goals: [...new Set(arr(a.main_goals).map((x) => txt(x, 40)).filter((x) => GOAL_SET.has(x)))].slice(0, 3), main_goal_other: txt(a.main_goal_other, 120),
+    industry: one(a.industry, INDUSTRY_SET),
     accomplished: txt(a.accomplished, 2000),
     no_problems: a.no_problems === true, problem: a.no_problems === true ? '' : txt(a.problem, 2000),
     problem_resolved: a.no_problems === true ? '' : (RESOLVED_SET.has(txt(a.problem_resolved, 20)) ? txt(a.problem_resolved, 20) : ''),
@@ -212,6 +225,7 @@ export function validateForSubmit(a: Answers, fns: Record<FnGroup, Opt[]>, softw
   if (!a.main_goals.length) e.main_goals = 'goal';
   else if (a.main_goals.includes('other')) { if (!a.main_goal_other) e.main_goal_other = 'goal_other'; else if (badShort(a.main_goal_other)) e.main_goal_other = 'short'; }
   if (!a.business_type) e.business_type = 'btype';
+  if (!a.industry) e.industry = 'industry';
   short('business_name', a.business_name, 'bname');
   if (!a.company_size) e.company_size = 'size';
   if (!a.deciders.length) e.deciders = 'deciders';
@@ -254,7 +268,7 @@ export function validateForSubmit(a: Answers, fns: Record<FnGroup, Opt[]>, softw
   return e;
 }
 
-const EXTRA_KEYS = ['main_goals', 'main_goal_other', 'accomplished', 'no_problems', 'problem_resolved', 'problem_how', 'suits_sizes', 'suits_types', 'suits_why', 'stop_reasons', 'stop_other', 'last_used'] as const;
+const EXTRA_KEYS = ['industry', 'main_goals', 'main_goal_other', 'accomplished', 'no_problems', 'problem_resolved', 'problem_how', 'suits_sizes', 'suits_types', 'suits_why', 'stop_reasons', 'stop_other', 'last_used'] as const;
 
 function answersToRow(a: Answers, step: number): Row {
   const c = (k: string) => nul(a[k] ?? '');
@@ -297,7 +311,7 @@ function rowToAnswers(r: Row): Answers {
     problem: s(r.biggest_difficulty),
     annual_cost: s(r.annual_cost_code), previous_software: s(r.previous_software), still_using: s(r.still_using_code),
     moved_to: s(r.moved_to_software),
-    main_goals: arr(x.main_goals), main_goal_other: s(x.main_goal_other), accomplished: s(x.accomplished), no_problems: x.no_problems === true,
+    industry: s(x.industry), main_goals: arr(x.main_goals), main_goal_other: s(x.main_goal_other), accomplished: s(x.accomplished), no_problems: x.no_problems === true,
     problem_resolved: s(x.problem_resolved), problem_how: s(x.problem_how), suits_sizes: arr(x.suits_sizes), suits_types: arr(x.suits_types), suits_why: s(x.suits_why),
     stop_reasons: arr(x.stop_reasons), stop_other: s(x.stop_other), last_used: s(x.last_used),
     overall: rt(r.overall_rating, false), ease: rt(r.ease_rating, false), support: rt(r.support_rating, r.support_unrated), value: rt(r.value_rating, r.value_unrated),

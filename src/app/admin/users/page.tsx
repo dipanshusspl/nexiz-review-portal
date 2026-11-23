@@ -15,6 +15,8 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     db().from('rv_roles').select('id,name').order('name'),
   ]);
   const users = (u ?? []) as Row[];
+  const { data: eps } = await db().from('rv_expert_profiles').select('id,user_id').in('user_id', users.map((x) => x.id));
+  const profileOf = new Map<string, string>(((eps ?? []) as { id: string; user_id: string }[]).map((p) => [p.user_id, p.id]));
   const roles = (r ?? []) as { id: string; name: string }[];
   const roleName = (x: Row) => (Array.isArray(x.role) ? x.role[0]?.name : x.role?.name) ?? '?';
   const editing = users.find((x) => x.id === sp.edit);
@@ -51,6 +53,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <td>{x.is_active ? 'Active' : 'Disabled'}</td>
               <td className="small">{x.last_login_at ? new Date(x.last_login_at).toLocaleString('en-GB') : '—'}</td>
               <td className="actions">
+                {profileOf.has(x.id) && <Link href={`/admin/experts/${profileOf.get(x.id)}`} className="btn-ghost">View profile</Link>}
                 <Link href={`/admin/users?edit=${x.id}`} className="btn-ghost">Edit</Link>
                 {x.id !== me.id && (
                   <form action={deleteUser}><input type="hidden" name="id" value={x.id} />
